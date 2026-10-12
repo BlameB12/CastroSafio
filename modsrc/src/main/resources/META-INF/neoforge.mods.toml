@@ -4,11 +4,11 @@ license="All Rights Reserved"
 
 [[mods]]
 modId="castrosafiomenu"
-version="1.3.1"
+version="1.3.2"
 displayName="CastroSafio Menu"
 authors="CastroSafio"
 description='''
-Interfaz de CastroSafio con editores OP para misiones, mobs y nuevos crafteos.
+Interfaz de CastroSafio con editores OP, deteccion automatica de crafteos y catalogo 3D de mobs.
 '''
 
 [[dependencies.castrosafiomenu]]
