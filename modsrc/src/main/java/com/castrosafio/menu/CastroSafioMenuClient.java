@@ -23,6 +23,9 @@ public final class CastroSafioMenuClient {
     public CastroSafioMenuClient(IEventBus modBus) {
         modBus.addListener(CastroSafioMenuClient::registerKeyMappings);
         NeoForge.EVENT_BUS.addListener(CastroSafioMenuClient::onClientTick);
+        NeoForge.EVENT_BUS.addListener(MissionOverlayRenderer::onScreenInit);
+        NeoForge.EVENT_BUS.addListener(MissionOverlayRenderer::onMouseClicked);
+        NeoForge.EVENT_BUS.addListener(MissionOverlayRenderer::onRender);
     }
 
     private static void registerKeyMappings(RegisterKeyMappingsEvent event) {
