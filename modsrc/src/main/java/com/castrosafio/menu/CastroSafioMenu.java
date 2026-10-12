@@ -34,7 +34,9 @@ public final class CastroSafioMenu {
     private static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
         while (OPEN_MENU.consumeClick()) {
-            if (minecraft.screen == null) {
+            if (minecraft.screen instanceof CastroMenuScreen) {
+                minecraft.setScreen(null);
+            } else if (minecraft.screen == null) {
                 minecraft.setScreen(new CastroMenuScreen());
             }
         }
