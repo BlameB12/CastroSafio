@@ -39,12 +39,15 @@ public final class AdminEditorScreen extends Screen {
     private EditBox searchBox;
     private EditBox titleBox;
     private EditBox descriptionBox;
+    private EditBox mobInfoBox;
     private int page;
     private final List<MissionObjective> objectives = new ArrayList<>();
 
     private String craftResult = "";
     private String craftStatus = "Selecciona el objeto que quieres publicar.";
 
+    private String selectedMobId = "";
+    private String mobStatus = "Selecciona un mob para editar su informacion.";
     private final Map<ResourceLocation, LivingEntity> mobPreviews = new HashMap<>();
     private final Set<ResourceLocation> invalidMobPreviews = new HashSet<>();
     private List<EntityType<?>> livingCatalog;
@@ -92,10 +95,22 @@ public final class AdminEditorScreen extends Screen {
             addRenderableWidget(Button.builder(Component.literal("Vaciar objetivos"), b -> objectives.clear())
                     .bounds(width - 154, height - 56, 130, 20).build());
         } else if (isMobs()) {
+            if (!ClientCatalogData.enabledMobs().isEmpty()) {
+                selectedMobId = ClientCatalogData.enabledMobs().iterator().next();
+            }
+            mobInfoBox = new EditBox(font, width - 300, 150, 276, 20, Component.literal("Info del mob"));
+            mobInfoBox.setHint(Component.literal("Ej: Jefe disponible desde el dia 5"));
+            mobInfoBox.setMaxLength(180);
+            if (!selectedMobId.isBlank()) mobInfoBox.setValue(ClientCatalogData.mobInfo(selectedMobId));
+            addRenderableWidget(mobInfoBox);
+
+            addRenderableWidget(Button.builder(Component.literal("Guardar info"), b -> saveMobInfo())
+                    .bounds(width - 300, height - 56, 140, 20).build());
             addRenderableWidget(Button.builder(Component.literal("Vaciar lista"), b -> {
                 sendCommand("castrosafio mob limpiar");
                 for (String id : ClientCatalogData.enabledMobs()) ClientCatalogData.setMobLocal(id, false);
-            }).bounds(width - 174, height - 56, 150, 20).build());
+                mobStatus = "Lista de mobs habilitados vaciada.";
+            }).bounds(width - 154, height - 56, 130, 20).build());
         } else if (isCrafts()) {
             addRenderableWidget(Button.builder(Component.literal("GUARDAR"), b -> saveCraft())
                     .bounds(width - 300, height - 56, 140, 20).build());
@@ -141,7 +156,7 @@ public final class AdminEditorScreen extends Screen {
         }
 
         if (isMissions()) renderMissionEditor(g, panelRightX, topY + 58, panelRightW);
-        else if (isMobs()) renderMobInfo(g, panelRightX, topY + 12, panelRightW);
+        else if (isMobs()) renderMobInfo(g, panelRightX, topY + 12, panelRightW, mouseX, mouseY);
         else renderCraftEditor(g, panelRightX, topY + 36, panelRightW);
 
         super.render(g, mouseX, mouseY, partialTick);
@@ -149,7 +164,7 @@ public final class AdminEditorScreen extends Screen {
 
     private String titleForMode() {
         if (isMissions()) return "EDITOR DE MISIONES - selecciona objetos para objetivos secundarios";
-        if (isMobs()) return "EDITOR DE MOBS - modelos 3D de Minecraft y mods";
+        if (isMobs()) return "EDITOR DE MOBS - modelos 3D + informacion configurable";
         return "EDITOR DE CRAFTEOS - elige el resultado y pulsa GUARDAR";
     }
 
@@ -211,10 +226,11 @@ public final class AdminEditorScreen extends Screen {
             ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(type);
             String idText = id == null ? "?" : id.toString();
             boolean enabled = ClientCatalogData.isMobEnabled(idText);
+            boolean selected = idText.equals(selectedMobId);
             boolean hover = inside(mouseX, mouseY, cx, cy, cardW, cardH);
 
-            g.fill(cx, cy, cx + cardW, cy + cardH,
-                    enabled ? GREEN : (hover ? CYAN : 0xFF354554));
+            int border = selected ? PINK : (enabled ? GREEN : (hover ? CYAN : 0xFF354554));
+            g.fill(cx, cy, cx + cardW, cy + cardH, border);
             g.fill(cx + 2, cy + 2, cx + cardW - 2, cy + cardH - 2, 0xFF071018);
 
             LivingEntity preview = previewEntity(type);
@@ -239,8 +255,8 @@ public final class AdminEditorScreen extends Screen {
 
             String name = type.getDescription().getString();
             g.drawCenteredString(font, trim(name, Math.max(8, cardW / 6)),
-                    cx + cardW / 2, cy + cardH - 24, enabled ? GREEN : WHITE);
-            g.drawCenteredString(font, enabled ? "HABILITADO" : "Click para habilitar",
+                    cx + cardW / 2, cy + cardH - 24, selected ? PINK : (enabled ? GREEN : WHITE));
+            g.drawCenteredString(font, enabled ? "HABILITADO" : "Click izq: habilitar",
                     cx + cardW / 2, cy + cardH - 12, enabled ? GREEN : 0xFF8BA5B8);
         }
 
@@ -268,12 +284,50 @@ public final class AdminEditorScreen extends Screen {
         if (objectives.size() > 14) g.drawString(font, "+ " + (objectives.size() - 14) + " mas", x + 10, yy, PINK, false);
     }
 
-    private void renderMobInfo(GuiGraphics g, int x, int y, int w) {
-        g.drawString(font, "MOBS HABILITADOS", x + 10, y, CYAN, false);
-        g.drawString(font, "Seleccionados: " + ClientCatalogData.enabledMobs().size(), x + 10, y + 18, WHITE, false);
-        g.drawWordWrap(font, Component.literal(
-                        "Cada tarjeta usa el modelo 3D real del mob. Incluye mobs de mods siempre que sean entidades vivas. Haz click para habilitar o deshabilitar."),
-                x + 10, y + 42, w - 20, 0xFF9CB3C7);
+    private void renderMobInfo(GuiGraphics g, int x, int y, int w, int mouseX, int mouseY) {
+        g.drawString(font, "MOB SELECCIONADO", x + 10, y, CYAN, false);
+        g.drawString(font, "Habilitados: " + ClientCatalogData.enabledMobs().size(), x + 10, y + 18, WHITE, false);
+
+        if (selectedMobId.isBlank()) {
+            g.drawWordWrap(font, Component.literal(
+                            "Selecciona un mob. Click izquierdo lo habilita/deshabilita; click derecho solo lo selecciona para editar su informacion."),
+                    x + 10, y + 44, w - 20, 0xFF9CB3C7);
+            return;
+        }
+
+        EntityType<?> type = entityTypeFromId(selectedMobId);
+        String name = type == null ? selectedMobId : type.getDescription().getString();
+        g.drawString(font, trim(name, 32), x + 10, y + 48, PINK, false);
+        g.drawString(font, trim(selectedMobId, 38), x + 10, y + 64, 0xFF8BA5B8, false);
+
+        if (type != null) {
+            LivingEntity preview = previewEntity(type);
+            if (preview != null) {
+                float biggest = Math.max(0.65F, Math.max(preview.getBbWidth(), preview.getBbHeight()));
+                int scale = Math.max(8, Math.min(42, (int) (52.0F / biggest)));
+                try {
+                    InventoryScreen.renderEntityInInventoryFollowsMouse(
+                            g,
+                            x + 18, y + 82,
+                            x + w - 18, y + 210,
+                            scale,
+                            0.0625F,
+                            (float) mouseX,
+                            (float) mouseY,
+                            preview
+                    );
+                } catch (Throwable ignored) {
+                }
+            }
+        }
+
+        g.drawString(font, "INFO QUE VERAN LOS JUGADORES", x + 10, y + 220, CYAN, false);
+        String current = ClientCatalogData.mobInfo(selectedMobId);
+        g.drawWordWrap(font, Component.literal(current.isBlank() ? "Sin informacion configurada." : current),
+                x + 10, y + 238, w - 20, current.isBlank() ? 0xFF71879A : WHITE);
+        g.drawWordWrap(font, Component.literal("Escribe arriba en el campo de texto y pulsa Guardar info."),
+                x + 10, y + 292, w - 20, 0xFF9CB3C7);
+        g.drawWordWrap(font, Component.literal(mobStatus), x + 10, y + 326, w - 20, GREEN);
     }
 
     private void renderCraftEditor(GuiGraphics g, int x, int y, int w) {
@@ -327,9 +381,15 @@ public final class AdminEditorScreen extends Screen {
                     ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(values.get(index));
                     if (id != null) {
                         String text = id.toString();
-                        boolean enable = !ClientCatalogData.isMobEnabled(text);
-                        ClientCatalogData.setMobLocal(text, enable);
-                        sendCommand("castrosafio mob " + (enable ? "habilitar " : "deshabilitar ") + text);
+                        selectedMobId = text;
+                        if (mobInfoBox != null) mobInfoBox.setValue(ClientCatalogData.mobInfo(text));
+                        mobStatus = "Editando " + values.get(index).getDescription().getString();
+
+                        if (button == 0) {
+                            boolean enable = !ClientCatalogData.isMobEnabled(text);
+                            ClientCatalogData.setMobLocal(text, enable);
+                            sendCommand("castrosafio mob " + (enable ? "habilitar " : "deshabilitar ") + text);
+                        }
                     }
                     return true;
                 }
@@ -384,6 +444,17 @@ public final class AdminEditorScreen extends Screen {
             sendCommand("castrosafio mision objetivos agregar 1 " + objective.type + " " + objective.target + " " + objective.amount);
         }
         sendCommand("castrosafio mision activar 1");
+    }
+
+    private void saveMobInfo() {
+        if (selectedMobId.isBlank()) {
+            mobStatus = "Primero selecciona un mob.";
+            return;
+        }
+        String text = mobInfoBox == null ? "" : mobInfoBox.getValue().trim();
+        ClientCatalogData.setMobInfoLocal(selectedMobId, text);
+        sendCommand("castrosafio_mobinfo " + selectedMobId + " " + (text.isBlank() ? "_" : cleanText(text)));
+        mobStatus = text.isBlank() ? "Informacion eliminada." : "Informacion guardada y sincronizada.";
     }
 
     private void saveCraft() {
@@ -459,6 +530,12 @@ public final class AdminEditorScreen extends Screen {
         }
         invalidMobPreviews.add(id);
         return null;
+    }
+
+    private static EntityType<?> entityTypeFromId(String id) {
+        ResourceLocation key = ResourceLocation.tryParse(id);
+        if (key == null || !BuiltInRegistries.ENTITY_TYPE.containsKey(key)) return null;
+        return BuiltInRegistries.ENTITY_TYPE.get(key);
     }
 
     private static Item itemFromId(String id) {
