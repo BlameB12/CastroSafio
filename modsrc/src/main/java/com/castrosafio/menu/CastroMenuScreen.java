@@ -35,6 +35,11 @@ public final class CastroMenuScreen extends Screen {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         graphics.fill(0, 0, width, height, 0xFF000000);
 
+        // IMPORTANT: GUI textures must use nearest-neighbour filtering.
+        // Minecraft otherwise smooths this large pixel-art texture when it is
+        // scaled to the current GUI resolution, which makes text/icons blurry.
+        Minecraft.getInstance().getTextureManager().getTexture(selected.texture).setFilter(false, false);
+
         Bounds b = bounds();
         graphics.blit(selected.texture, b.x, b.y, b.w, b.h,
                 0, 0, TEX_W, TEX_H, TEX_W, TEX_H);
@@ -50,7 +55,6 @@ public final class CastroMenuScreen extends Screen {
                 double refX = (mouseX - b.x) * TEX_W / b.w;
                 double refY = (mouseY - b.y) * TEX_H / b.h;
 
-                // Zona de las cuatro pestañas del lateral izquierdo, medida sobre la textura 1672x941.
                 if (refX >= 42 && refX <= 286) {
                     if (refY >= 48 && refY < 247) {
                         selected = Tab.DIFFICULTY;
