@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - mission-menu-neoforge-1.21.1
+      - mission-menu-op-admin-work4
   workflow_dispatch:
 
 jobs:
