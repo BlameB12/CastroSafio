@@ -4,11 +4,11 @@ license="All Rights Reserved"
 
 [[mods]]
 modId="castrosafiomenu"
-version="1.2.0"
+version="1.3.0"
 displayName="CastroSafio Menu"
 authors="CastroSafio"
 description='''
-Interfaz de CastroSafio para cambios de dificultad, nuevos crafteos, misiones diarias y mobs habilitados.
+Interfaz de CastroSafio para cambios de dificultad, nuevos crafteos, misiones diarias y mobs habilitados. La apariencia se carga desde el resource pack CastroSafio Menu.
 '''
 
 [[dependencies.castrosafiomenu]]
