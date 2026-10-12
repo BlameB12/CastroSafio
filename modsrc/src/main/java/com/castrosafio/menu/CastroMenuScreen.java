@@ -7,21 +7,26 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 public final class CastroMenuScreen extends Screen {
-    private static final int BORDER = 0xFFE5E8EF;
-    private static final int BORDER_DARK = 0xFF596171;
-    private static final int PANEL = 0xF207111B;
-    private static final int PANEL_2 = 0xFF0B1722;
-    private static final int GRID = 0xFF173345;
-    private static final int CYAN = 0xFF23E7FF;
-    private static final int PINK = 0xFFFF45D7;
+    private static final int BG = 0xF2050A0F;
+    private static final int FRAME_LIGHT = 0xFFE8ECF3;
+    private static final int FRAME_MID = 0xFF9BA4B4;
+    private static final int FRAME_DARK = 0xFF4D5666;
+    private static final int PANEL = 0xFF061019;
+    private static final int PANEL_ALT = 0xFF0B1722;
+    private static final int SLOT = 0xFF07121B;
+    private static final int SLOT_BORDER = 0xFF163447;
+    private static final int CYAN = 0xFF22E9FF;
+    private static final int PINK = 0xFFFF4DD8;
     private static final int YELLOW = 0xFFFFFF52;
-    private static final int WHITE = 0xFFF5F7FF;
-    private static final int MUTED = 0xFFAAB5C2;
+    private static final int GREEN = 0xFF66FF7D;
+    private static final int PURPLE = 0xFF8E74FF;
+    private static final int WHITE = 0xFFF4F7FF;
+    private static final int MUTED = 0xFFA9B5C5;
 
     private Tab selected = Tab.MISSIONS;
 
     public CastroMenuScreen() {
-        super(Component.literal("Menu de Misiones"));
+        super(Component.literal("CastroSafio"));
     }
 
     @Override
@@ -30,152 +35,216 @@ public final class CastroMenuScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // Render Minecraft's background/blur FIRST so it only affects the world behind the menu.
-        // Everything drawn below stays sharp and readable.
-        super.render(graphics, mouseX, mouseY, partialTick);
+    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        super.render(g, mouseX, mouseY, partialTick);
+        g.fill(0, 0, width, height, BG);
 
-        graphics.fill(0, 0, width, height, 0xE800050A);
+        int margin = Math.max(8, Math.min(18, width / 100));
+        int uiW = width - margin * 2;
+        int uiH = height - margin * 2;
+        int x = margin;
+        int y = margin;
+        int sideW = Math.max(150, Math.min(215, uiW / 7));
 
-        int uiW = Math.min(width - 20, 1120);
-        int uiH = Math.min(height - 20, 650);
-        int x = (width - uiW) / 2;
-        int y = (height - uiH) / 2;
-        int sideW = Math.max(118, Math.min(170, uiW / 6));
-
-        drawFrame(graphics, x, y, uiW, uiH);
-        drawSidebar(graphics, x + 10, y + 12, sideW - 12, uiH - 24, mouseX, mouseY);
-        drawMainPanel(graphics, x + sideW + 8, y + 12, uiW - sideW - 18, uiH - 24, mouseX, mouseY);
+        drawOuterFrame(g, x, y, uiW, uiH);
+        drawSidebar(g, x + 18, y + 22, sideW - 20, uiH - 44, mouseX, mouseY);
+        drawMain(g, x + sideW + 8, y + 22, uiW - sideW - 26, uiH - 44, mouseX, mouseY);
     }
 
-    private void drawFrame(GuiGraphics g, int x, int y, int w, int h) {
-        g.fill(x, y, x + w, y + h, BORDER_DARK);
-        g.fill(x + 3, y + 3, x + w - 3, y + h - 3, BORDER);
-        g.fill(x + 8, y + 8, x + w - 8, y + h - 8, 0xFF111923);
-        g.fill(x + 11, y + 11, x + w - 11, y + h - 11, 0xFF050B11);
+    private void drawOuterFrame(GuiGraphics g, int x, int y, int w, int h) {
+        // stepped metallic frame
+        g.fill(x + 10, y, x + w - 10, y + h, FRAME_DARK);
+        g.fill(x, y + 10, x + w, y + h - 10, FRAME_DARK);
+        g.fill(x + 12, y + 4, x + w - 12, y + h - 4, FRAME_LIGHT);
+        g.fill(x + 4, y + 12, x + w - 4, y + h - 12, FRAME_LIGHT);
+        g.fill(x + 16, y + 8, x + w - 16, y + h - 8, FRAME_MID);
+        g.fill(x + 8, y + 16, x + w - 8, y + h - 16, FRAME_MID);
+        g.fill(x + 19, y + 13, x + w - 19, y + h - 13, 0xFF111923);
+        g.fill(x + 13, y + 19, x + w - 13, y + h - 19, 0xFF111923);
+        g.fill(x + 22, y + 22, x + w - 22, y + h - 22, 0xFF02070B);
 
-        int center = x + w / 2;
-        g.fill(center - 70, y + 3, center + 70, y + 7, 0xFF1A2330);
-        int[] neon = {PINK, YELLOW, 0xFF66FF72, CYAN, 0xFF7C6DFF};
-        for (int i = 0; i < neon.length; i++) {
-            int sx = center - 45 + i * 18;
-            g.fill(sx, y + 4, sx + 13, y + 6, neon[i]);
+        drawRainbowBar(g, x + w / 2 - 64, y + 6, 128, 4);
+        drawRainbowBar(g, x + w / 2 - 80, y + h - 10, 160, 4);
+        drawRainbowBarVertical(g, x + 5, y + h / 2 - 80, 4, 160);
+        drawRainbowBarVertical(g, x + w - 9, y + h / 2 - 80, 4, 160);
+
+        // corner details
+        for (int i = 0; i < 4; i++) {
+            g.fill(x + 24 + i * 8, y + 9, x + 29 + i * 8, y + 13, 0xFF202B38);
+            g.fill(x + w - 53 + i * 8, y + 9, x + w - 48 + i * 8, y + 13, 0xFF202B38);
+        }
+    }
+
+    private void drawRainbowBar(GuiGraphics g, int x, int y, int w, int h) {
+        int[] c = {PINK, 0xFFFF8C45, YELLOW, GREEN, CYAN, PURPLE};
+        int seg = Math.max(1, w / c.length);
+        for (int i = 0; i < c.length; i++) {
+            int x2 = (i == c.length - 1) ? x + w : x + (i + 1) * seg;
+            g.fill(x + i * seg, y, x2, y + h, c[i]);
+        }
+    }
+
+    private void drawRainbowBarVertical(GuiGraphics g, int x, int y, int w, int h) {
+        int[] c = {PINK, 0xFFFF8C45, YELLOW, GREEN, CYAN, PURPLE};
+        int seg = Math.max(1, h / c.length);
+        for (int i = 0; i < c.length; i++) {
+            int y2 = (i == c.length - 1) ? y + h : y + (i + 1) * seg;
+            g.fill(x, y + i * seg, x + w, y2, c[i]);
         }
     }
 
     private void drawSidebar(GuiGraphics g, int x, int y, int w, int h, int mouseX, int mouseY) {
-        g.fill(x, y, x + w, y + h, 0xFF07101A);
-        int gap = 8;
+        g.fill(x, y, x + w, y + h, 0xFF071018);
+        int gap = 10;
         int buttonH = (h - gap * 5) / 4;
-
         Tab[] tabs = Tab.values();
+
         for (int i = 0; i < tabs.length; i++) {
             int by = y + gap + i * (buttonH + gap);
-            drawTab(g, tabs[i], x + 7, by, w - 14, buttonH, mouseX, mouseY);
+            drawTab(g, tabs[i], x + 4, by, w - 8, buttonH, mouseX, mouseY);
         }
     }
 
     private void drawTab(GuiGraphics g, Tab tab, int x, int y, int w, int h, int mouseX, int mouseY) {
         boolean active = selected == tab;
         boolean hover = in(mouseX, mouseY, x, y, w, h);
-        int glow = active ? CYAN : (hover ? 0xFF4D7185 : BORDER_DARK);
+        int outer = active ? CYAN : (hover ? 0xFF68A8C4 : FRAME_MID);
 
-        g.fill(x, y, x + w, y + h, glow);
-        g.fill(x + 2, y + 2, x + w - 2, y + h - 2, BORDER);
-        g.fill(x + 6, y + 6, x + w - 6, y + h - 6, active ? 0xFF102338 : PANEL_2);
+        g.fill(x, y, x + w, y + h, outer);
+        g.fill(x + 3, y + 3, x + w - 3, y + h - 3, FRAME_LIGHT);
+        g.fill(x + 7, y + 7, x + w - 7, y + h - 7, FRAME_DARK);
+        g.fill(x + 11, y + 11, x + w - 11, y + h - 11, active ? 0xFF13283D : PANEL_ALT);
 
         if (active) {
-            g.fill(x + 3, y + 3, x + 6, y + h - 3, PINK);
-            g.fill(x + w - 6, y + 3, x + w - 3, y + h - 3, CYAN);
+            g.fill(x + 2, y + 4, x + 6, y + h - 4, PINK);
+            g.fill(x + w - 6, y + 4, x + w - 2, y + h - 4, CYAN);
+            g.fill(x + 7, y + 7, x + w - 7, y + 10, PURPLE);
         }
 
-        int iconX = x + w / 2 - 8;
-        int iconY = y + Math.max(9, h / 2 - 24);
-        g.renderItem(new ItemStack(tab.icon), iconX, iconY);
+        drawScaledItem(g, tab.icon, x + w / 2, y + Math.max(30, h / 2 - 18), 2.35f);
 
-        int textY = y + h - 27;
-        g.drawCenteredString(font, tab.line1, x + w / 2, textY, WHITE);
+        int textY = y + h - 40;
+        drawCenteredScaled(g, tab.line1, x + w / 2, textY, 1.15f, WHITE);
         if (!tab.line2.isEmpty()) {
-            g.drawCenteredString(font, tab.line2, x + w / 2, textY + 11, active ? CYAN : MUTED);
+            drawCenteredScaled(g, tab.line2, x + w / 2, textY + 15, 1.15f, active ? CYAN : MUTED);
         }
     }
 
-    private void drawMainPanel(GuiGraphics g, int x, int y, int w, int h, int mouseX, int mouseY) {
+    private void drawMain(GuiGraphics g, int x, int y, int w, int h, int mouseX, int mouseY) {
         g.fill(x, y, x + w, y + h, PANEL);
-        g.fill(x + 2, y + 2, x + w - 2, y + 4, CYAN);
-        g.fill(x + 2, y + h - 4, x + w - 2, y + h - 2, 0xFF1F5A70);
+        g.fill(x + 3, y + 3, x + w - 3, y + 6, CYAN);
+        g.fill(x + 3, y + h - 6, x + w - 3, y + h - 3, 0xFF18566E);
 
-        String title = selected.title;
-        g.fill(x + 14, y + 12, x + w - 14, y + 50, 0xFF0A1724);
-        g.fill(x + 18, y + 15, x + 22, y + 47, PINK);
-        g.fill(x + w - 22, y + 15, x + w - 18, y + 47, CYAN);
-        g.drawCenteredString(font, title, x + w / 2, y + 26, WHITE);
+        drawHeader(g, x + 12, y + 10, w - 24, 66);
+        drawGrid(g, x + 14, y + 86, w - 28, h - 102, mouseX, mouseY);
+    }
 
-        int gridX = x + 16;
-        int gridY = y + 62;
-        int gridW = w - 32;
-        int gridH = h - 78;
-        drawGrid(g, gridX, gridY, gridW, gridH, mouseX, mouseY);
+    private void drawHeader(GuiGraphics g, int x, int y, int w, int h) {
+        g.fill(x + 24, y, x + w - 24, y + h, 0xFF0A1724);
+        g.fill(x, y + 12, x + 24, y + h - 12, 0xFF0A1724);
+        g.fill(x + w - 24, y + 12, x + w, y + h - 12, 0xFF0A1724);
+        g.fill(x + 4, y + 14, x + 9, y + h - 14, PINK);
+        g.fill(x + w - 9, y + 14, x + w - 4, y + h - 14, CYAN);
+        g.fill(x + 26, y + 4, x + w - 26, y + 7, 0xFF173D52);
+
+        int lineY = y + h / 2;
+        g.fill(x + 18, lineY - 1, x + 105, lineY + 1, PINK);
+        g.fill(x + w - 105, lineY - 1, x + w - 18, lineY + 1, CYAN);
+        drawCenteredScaled(g, selected.title, x + w / 2, y + 24, 1.9f, WHITE);
     }
 
     private void drawGrid(GuiGraphics g, int x, int y, int w, int h, int mouseX, int mouseY) {
-        int cols = w >= 760 ? 10 : (w >= 600 ? 8 : 6);
+        int cols = w >= 1100 ? 13 : (w >= 900 ? 11 : (w >= 700 ? 9 : 7));
         int rows = 5;
-        int gap = 5;
+        int gap = 6;
         int cellW = (w - gap * (cols - 1)) / cols;
-        int cellH = Math.max(48, Math.min(76, (h - gap * (rows - 1)) / rows));
-        int maxRows = Math.max(1, Math.min(rows, (h + gap) / (cellH + gap)));
-        int count = cols * maxRows;
+        int cellH = (h - gap * (rows - 1)) / rows;
 
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < cols * rows; i++) {
             int col = i % cols;
             int row = i / cols;
             int cx = x + col * (cellW + gap);
             int cy = y + row * (cellH + gap);
             boolean hover = in(mouseX, mouseY, cx, cy, cellW, cellH);
 
-            g.fill(cx, cy, cx + cellW, cy + cellH, hover ? 0xFF2A5365 : GRID);
-            g.fill(cx + 2, cy + 2, cx + cellW - 2, cy + cellH - 2, 0xFF061019);
+            g.fill(cx, cy, cx + cellW, cy + cellH, hover ? 0xFF275268 : SLOT_BORDER);
+            g.fill(cx + 3, cy + 3, cx + cellW - 3, cy + cellH - 3, hover ? 0xFF0E2230 : SLOT);
 
-            int questionColor = switch (i % 3) {
+            int qColor = switch (i % 6) {
                 case 0 -> CYAN;
                 case 1 -> PINK;
-                default -> YELLOW;
+                case 2 -> YELLOW;
+                case 3 -> GREEN;
+                case 4 -> PURPLE;
+                default -> WHITE;
             };
-            g.drawCenteredString(font, "?", cx + cellW / 2, cy + cellH / 2 - 4, questionColor);
-
-            if (hover) {
-                String hint = switch (selected) {
-                    case DIFFICULTY -> "Cambio bloqueado";
-                    case CRAFTS -> "Crafteo bloqueado";
-                    case MISSIONS -> "Mision por descubrir";
-                    case MOBS -> "Mob aun no habilitado";
-                };
-                g.drawCenteredString(font, hint, x + w / 2, y + h - 10, MUTED);
-            }
+            drawQuestion(g, cx + cellW / 2, cy + cellH / 2 - 9, qColor);
         }
+
+        if (in(mouseX, mouseY, x, y, w, h)) {
+            String hint = switch (selected) {
+                case DIFFICULTY -> "CAMBIO DE DIFICULTAD BLOQUEADO";
+                case CRAFTS -> "CRAFTEO AUN NO DESBLOQUEADO";
+                case MISSIONS -> "MISION AUN NO REVELADA";
+                case MOBS -> "MOB AUN NO HABILITADO";
+            };
+            drawCenteredScaled(g, hint, x + w / 2, y + h - 17, 0.9f, MUTED);
+        }
+    }
+
+    private void drawQuestion(GuiGraphics g, int centerX, int centerY, int color) {
+        // pixel-style large question mark, closer to the reference than the tiny font glyph
+        int s = 5;
+        int x = centerX - 3 * s;
+        int y = centerY - 4 * s;
+        // top
+        g.fill(x + s, y, x + 5 * s, y + s, WHITE);
+        g.fill(x + 5 * s, y + s, x + 6 * s, y + 3 * s, PINK);
+        g.fill(x, y + s, x + s, y + 3 * s, CYAN);
+        g.fill(x + 4 * s, y + 3 * s, x + 5 * s, y + 4 * s, color);
+        g.fill(x + 3 * s, y + 4 * s, x + 4 * s, y + 5 * s, color);
+        g.fill(x + 3 * s, y + 5 * s, x + 4 * s, y + 6 * s, color);
+        // dot
+        g.fill(x + 3 * s, y + 7 * s, x + 4 * s, y + 8 * s, PINK);
+    }
+
+    private void drawScaledItem(GuiGraphics g, net.minecraft.world.item.Item item, int centerX, int centerY, float scale) {
+        g.pose().pushPose();
+        g.pose().translate(centerX, centerY, 0);
+        g.pose().scale(scale, scale, 1.0f);
+        g.renderItem(new ItemStack(item), -8, -8);
+        g.pose().popPose();
+    }
+
+    private void drawCenteredScaled(GuiGraphics g, String text, int centerX, int y, float scale, int color) {
+        g.pose().pushPose();
+        g.pose().translate(centerX, y, 0);
+        g.pose().scale(scale, scale, 1.0f);
+        g.drawCenteredString(font, text, 0, 0, color);
+        g.pose().popPose();
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) {
-            int uiW = Math.min(width - 20, 1120);
-            int uiH = Math.min(height - 20, 650);
-            int x = (width - uiW) / 2;
-            int y = (height - uiH) / 2;
-            int sideW = Math.max(118, Math.min(170, uiW / 6));
-            int sx = x + 10;
-            int sy = y + 12;
-            int sw = sideW - 12;
-            int sh = uiH - 24;
-            int gap = 8;
+            int margin = Math.max(8, Math.min(18, width / 100));
+            int uiW = width - margin * 2;
+            int uiH = height - margin * 2;
+            int x = margin;
+            int y = margin;
+            int sideW = Math.max(150, Math.min(215, uiW / 7));
+            int sx = x + 18;
+            int sy = y + 22;
+            int sw = sideW - 20;
+            int sh = uiH - 44;
+            int gap = 10;
             int buttonH = (sh - gap * 5) / 4;
 
             Tab[] tabs = Tab.values();
             for (int i = 0; i < tabs.length; i++) {
-                int bx = sx + 7;
+                int bx = sx + 4;
                 int by = sy + gap + i * (buttonH + gap);
-                int bw = sw - 14;
+                int bw = sw - 8;
                 if (in(mouseX, mouseY, bx, by, bw, buttonH)) {
                     selected = tabs[i];
                     return true;
