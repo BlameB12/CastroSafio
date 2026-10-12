@@ -95,6 +95,12 @@ public final class AdminEditorScreen extends Screen {
     public boolean isPauseScreen() { return false; }
 
     @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        // This editor paints its own opaque background. Calling vanilla's background
+        // here would blur/darken the editor after it has already been drawn.
+    }
+
+    @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         g.fill(0, 0, width, height, 0xEE03070B);
         g.fill(12, 12, width - 12, height - 12, BORDER);
