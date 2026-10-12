@@ -34,6 +34,10 @@ public final class CastroMenuScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        // Let Minecraft render/blur the world first. Our UI is drawn afterwards so the
+        // CastroSafio interface itself never gets caught by the menu blur pass.
+        super.render(g, mouseX, mouseY, partialTick);
+
         g.fill(0, 0, width, height, BG);
         int margin = Math.max(8, Math.min(18, width / 100));
         int uiW = width - margin * 2;
@@ -42,7 +46,6 @@ public final class CastroMenuScreen extends Screen {
         drawOuterFrame(g, margin, margin, uiW, uiH);
         drawSidebar(g, margin + 18, margin + 22, sideW - 20, uiH - 44, mouseX, mouseY);
         drawMain(g, margin + sideW + 8, margin + 22, uiW - sideW - 26, uiH - 44, mouseX, mouseY);
-        super.render(g, mouseX, mouseY, partialTick);
     }
 
     private void drawOuterFrame(GuiGraphics g, int x, int y, int w, int h) {
