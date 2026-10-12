@@ -2,14 +2,21 @@ package com.castrosafio.menu;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public final class CastroMenuScreen extends Screen {
@@ -27,15 +34,21 @@ public final class CastroMenuScreen extends Screen {
     private static final int WHITE = 0xFFF4F7FF;
     private static final int MUTED = 0xFFA9B5C5;
 
+    private final Map<ResourceLocation, LivingEntity> mobPreviews = new HashMap<>();
+    private final Set<ResourceLocation> invalidMobPreviews = new HashSet<>();
     private Tab selected = Tab.MISSIONS;
 
-    public CastroMenuScreen() { super(Component.literal("CastroSafio")); }
-    @Override public boolean isPauseScreen() { return false; }
+    public CastroMenuScreen() {
+        super(Component.literal("CastroSafio"));
+    }
+
+    @Override
+    public boolean isPauseScreen() {
+        return false;
+    }
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // Let Minecraft render/blur the world first. Our UI is drawn afterwards so the
-        // CastroSafio interface itself never gets caught by the menu blur pass.
         super.render(g, mouseX, mouseY, partialTick);
 
         g.fill(0, 0, width, height, BG);
@@ -63,7 +76,9 @@ public final class CastroMenuScreen extends Screen {
     private void drawRainbowBar(GuiGraphics g, int x, int y, int w, int h) {
         int[] c = {PINK, 0xFFFF8C45, YELLOW, GREEN, CYAN, PURPLE};
         int seg = Math.max(1, w / c.length);
-        for (int i = 0; i < c.length; i++) g.fill(x + i * seg, y, i == c.length - 1 ? x + w : x + (i + 1) * seg, y + h, c[i]);
+        for (int i = 0; i < c.length; i++) {
+            g.fill(x + i * seg, y, i == c.length - 1 ? x + w : x + (i + 1) * seg, y + h, c[i]);
+        }
     }
 
     private void drawSidebar(GuiGraphics g, int x, int y, int w, int h, int mouseX, int mouseY) {
@@ -91,7 +106,7 @@ public final class CastroMenuScreen extends Screen {
         int contentH = h - 96;
         if (selected == Tab.MISSIONS) drawMission(g, x + 16, contentY, w - 32, contentH);
         else if (selected == Tab.CRAFTS) drawCrafts(g, x + 16, contentY, w - 32, contentH);
-        else if (selected == Tab.MOBS) drawMobs(g, x + 16, contentY, w - 32, contentH);
+        else if (selected == Tab.MOBS) drawMobs(g, x + 16, contentY, w - 32, contentH, mouseX, mouseY);
         else drawLockedGrid(g, x + 16, contentY, w - 32, contentH);
     }
 
@@ -131,29 +146,72 @@ public final class CastroMenuScreen extends Screen {
         }
     }
 
-    private void drawMobs(GuiGraphics g, int x, int y, int w, int h) {
+    private void drawMobs(GuiGraphics g, int x, int y, int w, int h, int mouseX, int mouseY) {
         Set<String> mobs = ClientCatalogData.enabledMobs();
         if (mobs.isEmpty()) {
             drawEmpty(g, x, y, w, h, "NO HAY MOBS SELECCIONADOS", "Un OP puede elegirlos con /castrosafio editor mobs");
             return;
         }
+
         g.fill(x, y, x + w, y + h, 0xFF071018);
-        int cols = Math.max(2, w / 230);
-        int cellW = (w - 20) / cols;
-        int yy = y + 12;
+        int gap = 10;
+        int cols = Math.max(1, w / 390);
+        int cardW = (w - 20 - gap * (cols - 1)) / cols;
+        int cardH = 126;
+        int startX = x + 10;
+        int startY = y + 12;
         int index = 0;
+
         for (String id : mobs) {
             int col = index % cols;
             int row = index / cols;
-            int cx = x + 10 + col * cellW;
-            int cy = yy + row * 36;
-            if (cy + 32 > y + h) break;
-            g.fill(cx, cy, cx + cellW - 8, cy + 30, 0xFF102131);
-            g.fill(cx + 4, cy + 4, cx + 8, cy + 26, GREEN);
-            g.drawString(font, id, cx + 16, cy + 10, WHITE, false);
+            int cx = startX + col * (cardW + gap);
+            int cy = startY + row * (cardH + gap);
+            if (cy + cardH > y + h - 8) break;
+
+            g.fill(cx, cy, cx + cardW, cy + cardH, GREEN);
+            g.fill(cx + 3, cy + 3, cx + cardW - 3, cy + cardH - 3, 0xFF0A1621);
+            g.fill(cx + 7, cy + 7, cx + 103, cy + cardH - 7, 0xFF071018);
+
+            EntityType<?> type = entityTypeFromId(id);
+            LivingEntity preview = type == null ? null : previewEntity(type);
+            if (preview != null) {
+                float biggest = Math.max(0.65F, Math.max(preview.getBbWidth(), preview.getBbHeight()));
+                int scale = Math.max(7, Math.min(38, (int) (48.0F / biggest)));
+                try {
+                    InventoryScreen.renderEntityInInventoryFollowsMouse(
+                            g,
+                            cx + 10, cy + 10,
+                            cx + 100, cy + cardH - 10,
+                            scale,
+                            0.0625F,
+                            (float) mouseX,
+                            (float) mouseY,
+                            preview
+                    );
+                } catch (Throwable ignored) {
+                    g.drawCenteredString(font, "3D", cx + 55, cy + cardH / 2, MUTED);
+                }
+            } else {
+                g.drawCenteredString(font, "?", cx + 55, cy + cardH / 2, MUTED);
+            }
+
+            String name = type == null ? id : type.getDescription().getString();
+            int textX = cx + 114;
+            int textW = Math.max(80, cardW - 126);
+            g.drawString(font, trim(name, Math.max(10, textW / 6)), textX, cy + 16, WHITE, false);
+            g.drawString(font, trim(id, Math.max(10, textW / 6)), textX, cy + 33, MUTED, false);
+            g.drawString(font, "HABILITADO", textX, cy + 52, GREEN, false);
+
+            String info = ClientCatalogData.mobInfo(id);
+            if (info == null || info.isBlank()) info = "Sin informacion adicional.";
+            g.drawWordWrap(font, Component.literal(info), textX, cy + 72, textW, info.equals("Sin informacion adicional.") ? MUTED : WHITE);
             index++;
         }
-        if (index < mobs.size()) g.drawString(font, "+ " + (mobs.size() - index) + " mobs mas", x + 12, y + h - 18, PINK, false);
+
+        if (index < mobs.size()) {
+            g.drawString(font, "+ " + (mobs.size() - index) + " mobs mas", x + 12, y + h - 18, PINK, false);
+        }
     }
 
     private void drawCrafts(GuiGraphics g, int x, int y, int w, int h) {
@@ -221,6 +279,32 @@ public final class CastroMenuScreen extends Screen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
+    private LivingEntity previewEntity(EntityType<?> type) {
+        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(type);
+        if (id == null || minecraft == null || minecraft.level == null) return null;
+        LivingEntity cached = mobPreviews.get(id);
+        if (cached != null) return cached;
+        if (invalidMobPreviews.contains(id)) return null;
+
+        try {
+            Entity entity = type.create(minecraft.level);
+            if (entity instanceof LivingEntity living) {
+                mobPreviews.put(id, living);
+                return living;
+            }
+        } catch (Throwable ignored) {
+        }
+        invalidMobPreviews.add(id);
+        return null;
+    }
+
+    private static EntityType<?> entityTypeFromId(String id) {
+        if (id == null || id.isBlank()) return null;
+        ResourceLocation key = ResourceLocation.tryParse(id);
+        if (key == null || !BuiltInRegistries.ENTITY_TYPE.containsKey(key)) return null;
+        return BuiltInRegistries.ENTITY_TYPE.get(key);
+    }
+
     private static Item itemFromId(String id) {
         if (id == null || id.isBlank()) return Items.AIR;
         ResourceLocation key = ResourceLocation.tryParse(id);
@@ -231,6 +315,11 @@ public final class CastroMenuScreen extends Screen {
     private static String displayItem(String id) {
         Item item = itemFromId(id);
         return item == Items.AIR ? (id == null ? "" : id) : item.getDescription().getString();
+    }
+
+    private static String trim(String value, int max) {
+        if (value == null) return "";
+        return value.length() <= max ? value : value.substring(0, Math.max(1, max - 1)) + "…";
     }
 
     private static boolean inside(double mx, double my, int x, int y, int w, int h) {
@@ -246,6 +335,11 @@ public final class CastroMenuScreen extends Screen {
         final String line1;
         final String line2;
         final String title;
-        Tab(String line1, String line2, String title) { this.line1 = line1; this.line2 = line2; this.title = title; }
+
+        Tab(String line1, String line2, String title) {
+            this.line1 = line1;
+            this.line2 = line2;
+            this.title = title;
+        }
     }
 }
