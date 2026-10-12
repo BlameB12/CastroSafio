@@ -31,6 +31,10 @@ public final class CastroMenuScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        // Render Minecraft's background/blur FIRST so it only affects the world behind the menu.
+        // Everything drawn below stays sharp and readable.
+        super.render(graphics, mouseX, mouseY, partialTick);
+
         graphics.fill(0, 0, width, height, 0xE800050A);
 
         int uiW = Math.min(width - 20, 1120);
@@ -42,8 +46,6 @@ public final class CastroMenuScreen extends Screen {
         drawFrame(graphics, x, y, uiW, uiH);
         drawSidebar(graphics, x + 10, y + 12, sideW - 12, uiH - 24, mouseX, mouseY);
         drawMainPanel(graphics, x + sideW + 8, y + 12, uiW - sideW - 18, uiH - 24, mouseX, mouseY);
-
-        super.render(graphics, mouseX, mouseY, partialTick);
     }
 
     private void drawFrame(GuiGraphics g, int x, int y, int w, int h) {
