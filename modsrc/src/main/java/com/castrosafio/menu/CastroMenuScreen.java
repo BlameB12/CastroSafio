@@ -8,6 +8,7 @@ import net.minecraft.resources.ResourceLocation;
 import org.lwjgl.glfw.GLFW;
 
 public final class CastroMenuScreen extends Screen {
+    // v1.4: the GUI is composed from independent textured elements, never a full-screen screenshot.
     private static final int REF_W = 1672;
     private static final int REF_H = 941;
 
