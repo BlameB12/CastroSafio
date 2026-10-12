@@ -20,6 +20,8 @@ public final class CastroSafioMenuClient {
             "key.categories.castrosafiomenu"
     );
 
+    private static Integer previousMenuBlur;
+
     public CastroSafioMenuClient(IEventBus modBus) {
         modBus.addListener(CastroSafioMenuClient::registerKeyMappings);
         NeoForge.EVENT_BUS.addListener(CastroSafioMenuClient::onClientTick);
@@ -34,6 +36,26 @@ public final class CastroSafioMenuClient {
 
     private static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
+
+        // Minecraft 1.21.1 applies a configurable post-process blur to Screen backgrounds.
+        // Both CastroSafio screens draw their own opaque UI, so that blur only softens the
+        // interface. Disable it temporarily while one of our screens is open and restore
+        // the player's original setting immediately after leaving the screen.
+        boolean castroScreen = minecraft.screen instanceof CastroMenuScreen
+                || minecraft.screen instanceof AdminEditorScreen;
+
+        if (castroScreen) {
+            if (previousMenuBlur == null) {
+                previousMenuBlur = minecraft.options.menuBackgroundBlurriness().get();
+            }
+            if (minecraft.options.menuBackgroundBlurriness().get() != 0) {
+                minecraft.options.menuBackgroundBlurriness().set(0);
+            }
+        } else if (previousMenuBlur != null) {
+            minecraft.options.menuBackgroundBlurriness().set(previousMenuBlur);
+            previousMenuBlur = null;
+        }
+
         while (OPEN_MENU.consumeClick()) {
             if (minecraft.screen instanceof CastroMenuScreen) {
                 minecraft.setScreen(null);
