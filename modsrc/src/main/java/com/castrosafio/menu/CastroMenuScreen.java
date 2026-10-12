@@ -35,14 +35,34 @@ public final class CastroMenuScreen extends Screen {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         graphics.fill(0, 0, width, height, 0xFF000000);
 
-        // IMPORTANT: GUI textures must use nearest-neighbour filtering.
-        // Minecraft otherwise smooths this large pixel-art texture when it is
-        // scaled to the current GUI resolution, which makes text/icons blurry.
-        Minecraft.getInstance().getTextureManager().getTexture(selected.texture).setFilter(false, false);
+        Minecraft mc = Minecraft.getInstance();
 
-        Bounds b = bounds();
-        graphics.blit(selected.texture, b.x, b.y, b.w, b.h,
-                0, 0, TEX_W, TEX_H, TEX_W, TEX_H);
+        // Pixel-art must not use bilinear filtering.
+        mc.getTextureManager().getTexture(selected.texture).setFilter(false, false);
+
+        PixelBounds b = pixelBounds();
+
+        /*
+         * Minecraft draws Screens in GUI-scaled coordinates. On GUI scale 2/3/4,
+         * drawing a 1672x941 texture directly to screen.width x screen.height first
+         * downsamples the image and then scales the GUI framebuffer back up. That is
+         * why the whole menu looked blurred even with NEAREST filtering enabled.
+         *
+         * Here we cancel Minecraft's GUI scale with the pose transform and render
+         * using the real framebuffer pixel dimensions. This keeps the supplied PNG
+         * effectively pixel-for-pixel on screen and only applies a tiny fit scale if
+         * the physical window is smaller than the source image.
+         */
+        float poseScale = (float) (b.physicalScale / b.guiScale);
+        graphics.pose().pushPose();
+        graphics.pose().scale(poseScale, poseScale, 1.0F);
+        graphics.blit(selected.texture,
+                b.textureSpaceX, b.textureSpaceY,
+                TEX_W, TEX_H,
+                0, 0,
+                TEX_W, TEX_H,
+                TEX_W, TEX_H);
+        graphics.pose().popPose();
 
         super.render(graphics, mouseX, mouseY, partialTick);
     }
@@ -50,10 +70,13 @@ public final class CastroMenuScreen extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) {
-            Bounds b = bounds();
-            if (mouseX >= b.x && mouseX < b.x + b.w && mouseY >= b.y && mouseY < b.y + b.h) {
-                double refX = (mouseX - b.x) * TEX_W / b.w;
-                double refY = (mouseY - b.y) * TEX_H / b.h;
+            PixelBounds b = pixelBounds();
+
+            if (mouseX >= b.logicalX && mouseX < b.logicalX + b.logicalW
+                    && mouseY >= b.logicalY && mouseY < b.logicalY + b.logicalH) {
+
+                double refX = (mouseX - b.logicalX) * TEX_W / b.logicalW;
+                double refY = (mouseY - b.logicalY) * TEX_H / b.logicalH;
 
                 if (refX >= 42 && refX <= 286) {
                     if (refY >= 48 && refY < 247) {
@@ -87,26 +110,53 @@ public final class CastroMenuScreen extends Screen {
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
-    private Bounds bounds() {
-        double textureAspect = TEX_W / (double) TEX_H;
-        double screenAspect = width / (double) height;
+    private PixelBounds pixelBounds() {
+        Minecraft mc = Minecraft.getInstance();
+        double guiScale = mc.getWindow().getGuiScale();
+        int framebufferW = mc.getWindow().getWidth();
+        int framebufferH = mc.getWindow().getHeight();
 
-        int drawW;
-        int drawH;
-        if (screenAspect > textureAspect) {
-            drawH = height;
-            drawW = (int) Math.round(drawH * textureAspect);
-        } else {
-            drawW = width;
-            drawH = (int) Math.round(drawW / textureAspect);
-        }
+        // Never enlarge the source image. If needed, shrink just enough to fit.
+        double physicalScale = Math.min(1.0D,
+                Math.min(framebufferW / (double) TEX_W, framebufferH / (double) TEX_H));
 
-        int drawX = (width - drawW) / 2;
-        int drawY = (height - drawH) / 2;
-        return new Bounds(drawX, drawY, drawW, drawH);
+        double physicalW = TEX_W * physicalScale;
+        double physicalH = TEX_H * physicalScale;
+        double physicalX = (framebufferW - physicalW) / 2.0D;
+        double physicalY = (framebufferH - physicalH) / 2.0D;
+
+        // Coordinates used before the pose scale is applied.
+        int textureSpaceX = (int) Math.round(physicalX / physicalScale);
+        int textureSpaceY = (int) Math.round(physicalY / physicalScale);
+
+        // Mouse coordinates are still in normal GUI logical coordinates.
+        double logicalX = physicalX / guiScale;
+        double logicalY = physicalY / guiScale;
+        double logicalW = physicalW / guiScale;
+        double logicalH = physicalH / guiScale;
+
+        return new PixelBounds(
+                guiScale,
+                physicalScale,
+                textureSpaceX,
+                textureSpaceY,
+                logicalX,
+                logicalY,
+                logicalW,
+                logicalH
+        );
     }
 
-    private record Bounds(int x, int y, int w, int h) {}
+    private record PixelBounds(
+            double guiScale,
+            double physicalScale,
+            int textureSpaceX,
+            int textureSpaceY,
+            double logicalX,
+            double logicalY,
+            double logicalW,
+            double logicalH
+    ) {}
 
     private enum Tab {
         DIFFICULTY(TEX_DIFFICULTY),
