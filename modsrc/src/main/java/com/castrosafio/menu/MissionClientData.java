@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,5 +29,15 @@ public final class MissionClientData {
 
     public static MissionDefinition get(int id) {
         return MISSIONS.get(id);
+    }
+
+    public static MissionDefinition active() {
+        return MISSIONS.values().stream().filter(m -> m.active).min(Comparator.comparingInt(m -> m.id)).orElse(null);
+    }
+
+    public static List<MissionDefinition> all() {
+        List<MissionDefinition> list = new ArrayList<>(MISSIONS.values());
+        list.sort(Comparator.comparingInt(m -> m.id));
+        return list;
     }
 }

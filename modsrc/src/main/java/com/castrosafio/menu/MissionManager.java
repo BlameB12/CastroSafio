@@ -27,24 +27,18 @@ public final class MissionManager {
     private static final List<MissionDefinition> MISSIONS = new ArrayList<>();
     private static boolean loaded;
 
-    private MissionManager() {
-    }
+    private MissionManager() {}
 
     public static synchronized void ensureLoaded() {
-        if (!loaded) {
-            load();
-        }
+        if (!loaded) load();
     }
 
     public static synchronized void load() {
         MISSIONS.clear();
-
         if (Files.exists(FILE)) {
             try (Reader reader = Files.newBufferedReader(FILE)) {
-                List<MissionDefinition> loadedMissions = GSON.fromJson(reader, LIST_TYPE);
-                if (loadedMissions != null) {
-                    MISSIONS.addAll(loadedMissions);
-                }
+                List<MissionDefinition> values = GSON.fromJson(reader, LIST_TYPE);
+                if (values != null) MISSIONS.addAll(values);
             } catch (Exception e) {
                 System.err.println("[CastroSafio] No se pudo leer " + FILE + ": " + e.getMessage());
             }
@@ -52,12 +46,10 @@ public final class MissionManager {
 
         for (int id = 1; id <= MAX_MISSIONS; id++) {
             final int missionId = id;
-            boolean exists = MISSIONS.stream().anyMatch(m -> m != null && m.id == missionId);
-            if (!exists) {
+            if (MISSIONS.stream().noneMatch(m -> m != null && m.id == missionId)) {
                 MISSIONS.add(new MissionDefinition(id));
             }
         }
-
         MISSIONS.removeIf(m -> m == null || m.id < 1 || m.id > MAX_MISSIONS);
         MISSIONS.sort(Comparator.comparingInt(m -> m.id));
         sanitize();
@@ -66,33 +58,35 @@ public final class MissionManager {
     }
 
     private static void sanitize() {
+        boolean foundActive = false;
         for (MissionDefinition mission : MISSIONS) {
-            if (mission.title == null || mission.title.isBlank()) {
-                mission.title = "Mision " + mission.id;
+            if (mission.title == null || mission.title.isBlank()) mission.title = "Mision " + mission.id;
+            if (mission.description == null) mission.description = "";
+            if (mission.objectiveType == null || mission.objectiveType.isBlank()) mission.objectiveType = "ninguno";
+            if (mission.target == null) mission.target = "";
+            if (mission.amount < 1) mission.amount = 1;
+            if (mission.objectives == null) mission.objectives = new ArrayList<>();
+            mission.objectives.removeIf(o -> o == null || o.target == null || o.target.isBlank());
+            for (MissionObjective objective : mission.objectives) {
+                if (objective.type == null || objective.type.isBlank()) objective.type = "conseguir";
+                if (objective.amount < 1) objective.amount = 1;
             }
-            if (mission.description == null) {
-                mission.description = "";
+            if (mission.active) {
+                if (foundActive) mission.active = false;
+                else {
+                    foundActive = true;
+                    mission.unlocked = true;
+                }
             }
-            if (mission.objectiveType == null || mission.objectiveType.isBlank()) {
-                mission.objectiveType = "ninguno";
-            }
-            if (mission.target == null) {
-                mission.target = "";
-            }
-            if (mission.amount < 1) {
-                mission.amount = 1;
+            if (mission.objectives.isEmpty() && !"ninguno".equalsIgnoreCase(mission.objectiveType) && !mission.target.isBlank()) {
+                mission.objectives.add(new MissionObjective(mission.objectiveType, mission.target, mission.amount));
             }
         }
     }
 
     public static synchronized MissionDefinition get(int id) {
         ensureLoaded();
-        for (MissionDefinition mission : MISSIONS) {
-            if (mission.id == id) {
-                return mission;
-            }
-        }
-        return null;
+        return MISSIONS.stream().filter(m -> m.id == id).findFirst().orElse(null);
     }
 
     public static synchronized List<MissionDefinition> all() {
@@ -100,11 +94,37 @@ public final class MissionManager {
         return new ArrayList<>(MISSIONS);
     }
 
-    public static synchronized void save() {
-        if (!loaded) {
-            return;
-        }
+    public static synchronized MissionDefinition active() {
+        ensureLoaded();
+        return MISSIONS.stream().filter(m -> m.active).findFirst().orElse(null);
+    }
 
+    public static synchronized void activate(int id) {
+        ensureLoaded();
+        for (MissionDefinition mission : MISSIONS) {
+            mission.active = mission.id == id;
+            if (mission.active) mission.unlocked = true;
+        }
+        save();
+    }
+
+    public static synchronized void clearObjectives(int id) {
+        MissionDefinition mission = get(id);
+        if (mission == null) return;
+        mission.objectives.clear();
+        mission.objectiveType = "ninguno";
+        mission.target = "";
+        mission.amount = 1;
+    }
+
+    public static synchronized void addObjective(int id, String type, String target, int amount) {
+        MissionDefinition mission = get(id);
+        if (mission == null) return;
+        mission.objectives.add(new MissionObjective(type, target, amount));
+    }
+
+    public static synchronized void save() {
+        if (!loaded) return;
         try {
             Files.createDirectories(FILE.getParent());
             try (Writer writer = Files.newBufferedWriter(FILE)) {
@@ -129,8 +149,6 @@ public final class MissionManager {
     }
 
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) {
-            sync(player);
-        }
+        if (event.getEntity() instanceof ServerPlayer player) sync(player);
     }
 }
