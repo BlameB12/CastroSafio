@@ -45,6 +45,7 @@ public final class AdminEditorScreen extends Screen {
 
     private String craftResult = "";
     private String craftStatus = "Selecciona el objeto que quieres publicar.";
+    private int craftPublishWait = -1;
 
     private String selectedMobId = "";
     private String mobStatus = "Selecciona un mob para editar su informacion.";
@@ -116,6 +117,7 @@ public final class AdminEditorScreen extends Screen {
                     .bounds(width - 300, height - 56, 140, 20).build());
             addRenderableWidget(Button.builder(Component.literal("Deseleccionar"), b -> {
                 craftResult = "";
+                craftPublishWait = -1;
                 craftStatus = "Selecciona el objeto que quieres publicar.";
             }).bounds(width - 154, height - 56, 130, 20).build());
         }
@@ -124,6 +126,26 @@ public final class AdminEditorScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (!isCrafts() || craftPublishWait < 0 || craftResult.isBlank()) return;
+
+        for (CraftDefinition craft : ClientCatalogData.activeCrafts()) {
+            if (craftResult.equals(craft.result)) {
+                craftStatus = "PUBLICADO correctamente.";
+                craftPublishWait = -1;
+                return;
+            }
+        }
+
+        craftPublishWait++;
+        if (craftPublishWait > 100) {
+            craftStatus = "No se pudo publicar. Mira el chat para ver el motivo.";
+            craftPublishWait = -1;
+        }
     }
 
     @Override
@@ -413,6 +435,7 @@ public final class AdminEditorScreen extends Screen {
                             changeObjective(id.toString(), button == 0 ? 1 : -1);
                         } else if (isCrafts() && button == 0) {
                             craftResult = id.toString();
+                            craftPublishWait = -1;
                             craftStatus = "Seleccionado: " + values.get(index).getDescription().getString();
                         }
                     }
@@ -462,8 +485,9 @@ public final class AdminEditorScreen extends Screen {
             craftStatus = "Primero selecciona un objeto.";
             return;
         }
+        craftPublishWait = 0;
+        craftStatus = "Detectando receta y publicando...";
         sendCommand("castrosafio crafteo autodetectar " + craftResult);
-        craftStatus = "Guardando, activando y publicando...";
     }
 
     private void sendCommand(String command) {
