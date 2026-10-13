@@ -1,10 +1,9 @@
-name: Build CastroSafio Mission Menu
+name: Build Fogata NeoForge 1.21.1
 
 on:
   push:
     branches:
-      - mission-menu-neoforge-1.21.1
-      - mission-menu-op-admin-work4
+      - fogata-neoforge-1.21.1
   workflow_dispatch:
 
 jobs:
@@ -31,6 +30,6 @@ jobs:
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
-          name: CastroSafio-Menu-1.21.1
+          name: Fogata-y-Cucharas-NeoForge-1.21.1
           path: build/libs/*.jar
           if-no-files-found: error
