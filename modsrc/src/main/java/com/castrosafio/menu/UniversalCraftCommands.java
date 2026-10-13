@@ -19,9 +19,8 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Reemplaza la deteccion vieja limitada a RecipeType.CRAFTING.
- * Escanea TODO el RecipeManager cargado por el servidor, incluyendo recipe types
- * registrados por mods y datapacks, sin depender del mod que los agrego.
+ * Escanea TODO el RecipeManager cargado por el servidor. Esto incluye mesa de
+ * crafteo, herreria, hornos, cortapiedras y RecipeType personalizados de mods.
  */
 public final class UniversalCraftCommands {
     private UniversalCraftCommands() {}
@@ -123,17 +122,20 @@ public final class UniversalCraftCommands {
             }
         }
 
+        ResourceLocation typeId = BuiltInRegistries.RECIPE_TYPE.getKey(recipe.getType());
+        String typeText = typeId == null ? recipe.getType().toString() : typeId.toString();
+        ResourceLocation recipeId = chosen.id();
+
         craft.result = wanted.toString();
         craft.resultAmount = Math.max(1, chosenResult.getCount());
         craft.name = chosenResult.getHoverName().getString();
+        craft.recipeType = typeText;
+        craft.recipeId = recipeId == null ? "" : recipeId.toString();
         craft.active = true;
 
         CraftConfigManager.save();
         MobConfigManager.syncAll();
 
-        ResourceLocation typeId = BuiltInRegistries.RECIPE_TYPE.getKey(recipe.getType());
-        String typeText = typeId == null ? recipe.getType().toString() : typeId.toString();
-        ResourceLocation recipeId = chosen.id();
         source.sendSuccess(() -> Component.literal(
                 "[CastroSafio] Publicado: " + craft.name
                         + " | tipo: " + typeText
