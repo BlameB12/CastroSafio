@@ -28,6 +28,8 @@ public final class CastroSafioMenuClient {
         NeoForge.EVENT_BUS.addListener(MissionOverlayRenderer::onScreenInit);
         NeoForge.EVENT_BUS.addListener(MissionOverlayRenderer::onMouseClicked);
         NeoForge.EVENT_BUS.addListener(MissionOverlayRenderer::onRender);
+        NeoForge.EVENT_BUS.addListener(CraftDeleteOverlay::onMouseClicked);
+        NeoForge.EVENT_BUS.addListener(CraftDeleteOverlay::onRender);
     }
 
     private static void registerKeyMappings(RegisterKeyMappingsEvent event) {
