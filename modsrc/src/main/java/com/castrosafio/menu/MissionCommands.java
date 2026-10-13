@@ -86,7 +86,7 @@ public final class MissionCommands {
                                 .then(Commands.literal("limpiar").executes(ctx -> clearMobs(ctx.getSource()))))
                         .then(Commands.literal("crafteo")
                                 .then(Commands.literal("autodetectar")
-                                        .then(Commands.argument("item", StringArgumentType.word())
+                                        .then(Commands.argument("item", StringArgumentType.greedyString())
                                                 .executes(ctx -> autoDetectCraft(ctx.getSource(), StringArgumentType.getString(ctx, "item")))))
                                 .then(Commands.literal("limpiar")
                                         .then(Commands.argument("id", IntegerArgumentType.integer(1, CraftConfigManager.MAX_CRAFTS))
@@ -233,6 +233,7 @@ public final class MissionCommands {
     }
 
     private static int autoDetectCraft(CommandSourceStack source, String itemId) {
+        itemId = itemId.trim();
         ResourceLocation wanted = ResourceLocation.tryParse(itemId);
         if (wanted == null || !BuiltInRegistries.ITEM.containsKey(wanted)) {
             source.sendFailure(Component.literal("[CastroSafio] Ese objeto no existe: " + itemId));
@@ -296,7 +297,7 @@ public final class MissionCommands {
             }
         }
 
-        craft.result = itemId;
+        craft.result = wanted.toString();
         craft.resultAmount = Math.max(1, chosenResult.getCount());
         craft.name = chosenResult.getHoverName().getString();
         craft.active = true;
