@@ -92,8 +92,9 @@ public final class UniversalRecipeOverlay {
         if (type.contains("crafting")) {
             drawCrafting(g, craft, px + 10, py + 53);
         } else if (type.contains("smithing")) {
-            drawLinear(g, craft, px + 10, py + 69, 3);
-            g.drawString(font, "PLANTILLA   BASE   MATERIAL", px + 10, py + 55, MUTED, false);
+            // Herreria: se muestran directamente los tres ITEMS reales de la receta.
+            // Nada de textos tipo PLANTILLA / BASE / MATERIAL dentro de los slots.
+            drawSmithing(g, craft, px + 14, py + 70);
         } else if (type.contains("smelting") || type.contains("blasting") || type.contains("smoking")
                 || type.contains("campfire") || type.contains("stonecutting")) {
             drawLinear(g, craft, px + 24, py + 72, 1);
@@ -115,6 +116,25 @@ public final class UniversalRecipeOverlay {
         drawResult(g, craft, arrowX + 30, gridY + 22);
     }
 
+    private static void drawSmithing(GuiGraphics g, CraftDefinition craft, int startX, int y) {
+        List<String> inputs = nonBlankIngredients(craft);
+
+        // Siempre se dibujan los tres espacios reales de una mesa de herreria.
+        // Si el RecipeType del mod expone sus ingredientes, cada slot contiene el item real.
+        for (int i = 0; i < 3; i++) {
+            int x = startX + i * 38;
+            String ingredientId = i < inputs.size() ? inputs.get(i) : "";
+            drawSlot(g, x, y, ingredientId);
+            if (i < 2) {
+                g.drawString(Minecraft.getInstance().font, "+", x + 27, y + 8, MUTED, false);
+            }
+        }
+
+        int arrowX = startX + 116;
+        g.drawString(Minecraft.getInstance().font, "=>", arrowX, y + 8, WHITE, false);
+        drawResult(g, craft, arrowX + 31, y - 5);
+    }
+
     private static void drawLinear(GuiGraphics g, CraftDefinition craft, int startX, int y, int maxInputs) {
         List<String> inputs = nonBlankIngredients(craft);
         int shown = Math.min(maxInputs, inputs.size());
@@ -127,8 +147,9 @@ public final class UniversalRecipeOverlay {
             }
         }
         if (shown == 0) {
-            g.drawString(Minecraft.getInstance().font, "Ingredientes gestionados por el mod", x, y + 8, MUTED, false);
-            x += 154;
+            // Se conserva el espacio visual, pero no se inventan nombres de ingredientes.
+            drawSlot(g, x, y, "");
+            x += 34;
         }
         g.drawString(Minecraft.getInstance().font, "=>", x + 2, y + 8, WHITE, false);
         drawResult(g, craft, x + 29, y - 5);
@@ -137,9 +158,11 @@ public final class UniversalRecipeOverlay {
     private static void drawGeneric(GuiGraphics g, CraftDefinition craft, int x, int y) {
         List<String> inputs = nonBlankIngredients(craft);
         if (inputs.isEmpty()) {
-            g.drawString(Minecraft.getInstance().font, "Receta personalizada del mod", x, y + 18, MUTED, false);
-            g.drawString(Minecraft.getInstance().font, "=>", x + 158, y + 18, WHITE, false);
-            drawResult(g, craft, x + 186, y + 5);
+            // RecipeType personalizado que no expone ingredientes: se muestra un slot vacio,
+            // sin reemplazarlo por palabras que parezcan ingredientes.
+            drawSlot(g, x, y + 5, "");
+            g.drawString(Minecraft.getInstance().font, "=>", x + 36, y + 13, WHITE, false);
+            drawResult(g, craft, x + 64, y);
             return;
         }
 
