@@ -11,6 +11,7 @@ public final class CastroSafioMenu {
     public CastroSafioMenu(IEventBus modBus) {
         modBus.addListener(MissionNetworking::register);
         NeoForge.EVENT_BUS.addListener(MissionCommands::register);
+        NeoForge.EVENT_BUS.addListener(CastroOpCommands::register);
         NeoForge.EVENT_BUS.addListener(MobInfoCommands::register);
         NeoForge.EVENT_BUS.addListener(MissionManager::onPlayerLogin);
         NeoForge.EVENT_BUS.addListener(MobConfigManager::onPlayerLogin);
