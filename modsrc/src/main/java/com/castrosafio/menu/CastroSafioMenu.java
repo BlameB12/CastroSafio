@@ -11,6 +11,9 @@ public final class CastroSafioMenu {
     public CastroSafioMenu(IEventBus modBus) {
         modBus.addListener(MissionNetworking::register);
         NeoForge.EVENT_BUS.addListener(MissionCommands::register);
+        // Se registra despues del handler viejo para reemplazar /crafteo autodetectar
+        // por la version universal que recorre TODOS los RecipeType cargados.
+        NeoForge.EVENT_BUS.addListener(UniversalCraftCommands::register);
         NeoForge.EVENT_BUS.addListener(CastroOpCommands::register);
         NeoForge.EVENT_BUS.addListener(MobInfoCommands::register);
         NeoForge.EVENT_BUS.addListener(MissionManager::onPlayerLogin);
