@@ -105,7 +105,7 @@ public final class CastroMenuScreen extends Screen {
         int contentY = y + 82;
         int contentH = h - 96;
         if (selected == Tab.MISSIONS) drawMission(g, x + 16, contentY, w - 32, contentH);
-        else if (selected == Tab.CRAFTS) drawCrafts(g, x + 16, contentY, w - 32, contentH);
+        else if (selected == Tab.CRAFTS) drawCrafts(g, x + 16, contentY, w - 32, contentH, mouseX, mouseY);
         else if (selected == Tab.MOBS) drawMobs(g, x + 16, contentY, w - 32, contentH, mouseX, mouseY);
         else drawLockedGrid(g, x + 16, contentY, w - 32, contentH);
     }
@@ -214,23 +214,82 @@ public final class CastroMenuScreen extends Screen {
         }
     }
 
-    private void drawCrafts(GuiGraphics g, int x, int y, int w, int h) {
+    private void drawCrafts(GuiGraphics g, int x, int y, int w, int h, int mouseX, int mouseY) {
         List<CraftDefinition> crafts = ClientCatalogData.activeCrafts();
         if (crafts.isEmpty()) {
             drawEmpty(g, x, y, w, h, "NO HAY CRAFTEOS NUEVOS", "Un OP puede crearlos con /castrosafio editor crafteos");
             return;
         }
+
         g.fill(x, y, x + w, y + h, 0xFF071018);
         int yy = y + 12;
+        CraftDefinition hovered = null;
+
         for (CraftDefinition craft : crafts) {
             if (yy + 64 > y + h) break;
-            g.fill(x + 12, yy, x + w - 12, yy + 56, 0xFF102131);
+
+            int cardX = x + 12;
+            int cardY = yy;
+            int cardW = w - 24;
+            int cardH = 56;
+            boolean hover = inside(mouseX, mouseY, cardX, cardY, cardW, cardH);
+
+            if (hover) {
+                g.fill(cardX, cardY, cardX + cardW, cardY + cardH, CYAN);
+                g.fill(cardX + 2, cardY + 2, cardX + cardW - 2, cardY + cardH - 2, 0xFF102131);
+                hovered = craft;
+            } else {
+                g.fill(cardX, cardY, cardX + cardW, cardY + cardH, 0xFF102131);
+            }
+
             Item result = itemFromId(craft.result);
-            if (result != Items.AIR) g.renderItem(new ItemStack(result, Math.max(1, craft.resultAmount)), x + 26, yy + 19);
-            g.drawString(font, craft.name, x + 54, yy + 12, WHITE, false);
-            g.drawString(font, "Resultado: " + displayItem(craft.result) + " x" + craft.resultAmount, x + 54, yy + 30, CYAN, false);
+            if (result != Items.AIR) {
+                g.renderItem(new ItemStack(result, Math.max(1, craft.resultAmount)), cardX + 14, cardY + 19);
+            }
+
+            g.drawString(font, craft.name, cardX + 42, cardY + 24, hover ? CYAN : WHITE, false);
             yy += 64;
         }
+
+        if (hovered != null) drawCraftRecipePopup(g, hovered, mouseX, mouseY);
+    }
+
+    private void drawCraftRecipePopup(GuiGraphics g, CraftDefinition craft, int mouseX, int mouseY) {
+        int popupW = 218;
+        int popupH = 126;
+        int px = Math.max(8, Math.min(mouseX + 14, width - popupW - 8));
+        int py = Math.max(8, Math.min(mouseY + 14, height - popupH - 8));
+
+        g.fill(px, py, px + popupW, py + popupH, CYAN);
+        g.fill(px + 2, py + 2, px + popupW - 2, py + popupH - 2, 0xFF08131D);
+        g.drawString(font, trim(craft.name, 30), px + 10, py + 9, WHITE, false);
+        g.drawString(font, "CRAFTEO", px + 10, py + 24, CYAN, false);
+
+        int cell = 26;
+        int gridX = px + 10;
+        int gridY = py + 39;
+        for (int i = 0; i < 9; i++) {
+            int cx = gridX + (i % 3) * cell;
+            int cy = gridY + (i / 3) * cell;
+            g.fill(cx, cy, cx + 23, cy + 23, FRAME_MID);
+            g.fill(cx + 2, cy + 2, cx + 21, cy + 21, 0xFF071018);
+
+            String ingredientId = "";
+            if (craft.ingredients != null && i < craft.ingredients.size()) ingredientId = craft.ingredients.get(i);
+            Item ingredient = itemFromId(ingredientId);
+            if (ingredient != Items.AIR) g.renderItem(new ItemStack(ingredient), cx + 3, cy + 3);
+        }
+
+        int arrowX = gridX + cell * 3 + 9;
+        int arrowY = gridY + 30;
+        g.drawString(font, "=>", arrowX, arrowY, WHITE, false);
+
+        int resultX = arrowX + 28;
+        int resultY = gridY + 22;
+        g.fill(resultX, resultY, resultX + 34, resultY + 34, PINK);
+        g.fill(resultX + 2, resultY + 2, resultX + 32, resultY + 32, 0xFF071018);
+        Item result = itemFromId(craft.result);
+        if (result != Items.AIR) g.renderItem(new ItemStack(result, Math.max(1, craft.resultAmount)), resultX + 9, resultY + 9);
     }
 
     private void drawLockedGrid(GuiGraphics g, int x, int y, int w, int h) {
