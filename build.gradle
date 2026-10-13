@@ -3,19 +3,19 @@ plugins {
     id 'net.neoforged.gradle.userdev' version '7.1.38'
 }
 
-version = '1.2.0'
+version = '1.0.0'
 group = 'com.castrosafio'
 
 base {
-    archivesName = 'CastroSafio-Menu-1.21.1'
+    archivesName = 'Fogata-y-Cucharas-NeoForge-1.21.1'
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
 sourceSets {
     main {
-        java.srcDirs = ['modsrc/src/main/java']
-        resources.srcDirs = ['modsrc/src/main/resources']
+        java.srcDirs = ['fogata/src/main/java']
+        resources.srcDirs = ['fogata/src/main/resources']
     }
 }
 
