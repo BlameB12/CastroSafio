@@ -43,13 +43,8 @@ public final class CraftConfigManager {
         }
         CRAFTS.removeIf(c -> c == null || c.id < 1 || c.id > MAX_CRAFTS);
         CRAFTS.sort(Comparator.comparingInt(c -> c.id));
-        for (CraftDefinition c : CRAFTS) {
-            sanitize(c);
-        }
+        for (CraftDefinition c : CRAFTS) sanitize(c);
 
-        // Migracion puntual solicitada para 1.3.7: elimina el Bookshelf que se uso
-        // durante las pruebas, pero solo una vez. Despues el usuario puede volver a
-        // publicarlo normalmente si alguna vez quiere hacerlo.
         if (!Files.exists(BOOKSHELF_MIGRATION)) {
             boolean removed = false;
             for (CraftDefinition craft : CRAFTS) {
@@ -103,6 +98,8 @@ public final class CraftConfigManager {
         for (int i = 0; i < c.ingredients.size(); i++) if (c.ingredients.get(i) == null) c.ingredients.set(i, "");
         if (c.result == null) c.result = "";
         if (c.resultAmount < 1) c.resultAmount = 1;
+        if (c.recipeType == null || c.recipeType.isBlank()) c.recipeType = "minecraft:crafting";
+        if (c.recipeId == null) c.recipeId = "";
     }
 
     private static void resetCraft(CraftDefinition craft) {
@@ -111,6 +108,8 @@ public final class CraftConfigManager {
         craft.ingredients = fresh.ingredients;
         craft.result = fresh.result;
         craft.resultAmount = fresh.resultAmount;
+        craft.recipeType = fresh.recipeType;
+        craft.recipeId = fresh.recipeId;
         craft.active = false;
     }
 }
