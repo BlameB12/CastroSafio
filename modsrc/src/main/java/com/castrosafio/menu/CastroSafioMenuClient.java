@@ -28,6 +28,7 @@ public final class CastroSafioMenuClient {
         NeoForge.EVENT_BUS.addListener(MissionOverlayRenderer::onScreenInit);
         NeoForge.EVENT_BUS.addListener(MissionOverlayRenderer::onMouseClicked);
         NeoForge.EVENT_BUS.addListener(MissionOverlayRenderer::onRender);
+        NeoForge.EVENT_BUS.addListener(UniversalRecipeOverlay::onRender);
         NeoForge.EVENT_BUS.addListener(CraftDeleteOverlay::onMouseClicked);
         NeoForge.EVENT_BUS.addListener(CraftDeleteOverlay::onRender);
     }
@@ -39,10 +40,6 @@ public final class CastroSafioMenuClient {
     private static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
 
-        // Minecraft 1.21.1 applies a configurable post-process blur to Screen backgrounds.
-        // Both CastroSafio screens draw their own opaque UI, so that blur only softens the
-        // interface. Disable it temporarily while one of our screens is open and restore
-        // the player's original setting immediately after leaving the screen.
         boolean castroScreen = minecraft.screen instanceof CastroMenuScreen
                 || minecraft.screen instanceof AdminEditorScreen;
 
