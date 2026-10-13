@@ -10,6 +10,8 @@ public final class CraftDefinition {
     public String result;
     public int resultAmount;
     public boolean active;
+    public String recipeType;
+    public String recipeId;
 
     public CraftDefinition() {}
 
@@ -21,5 +23,7 @@ public final class CraftDefinition {
         this.result = "";
         this.resultAmount = 1;
         this.active = false;
+        this.recipeType = "minecraft:crafting";
+        this.recipeId = "";
     }
 }
