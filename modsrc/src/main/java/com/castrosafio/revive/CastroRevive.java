@@ -71,7 +71,6 @@ public final class CastroRevive {
         marker.setInvisible(true);
         marker.setInvulnerable(true);
         marker.setNoGravity(true);
-        marker.setMarker(true);
         marker.setCustomNameVisible(false);
         marker.setCustomName(Component.literal(FX_PREFIX + startTime + "|" + target.getGameProfile().getName()));
         level.addFreshEntity(marker);
