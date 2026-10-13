@@ -19,6 +19,7 @@ public final class CraftConfigManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Type LIST_TYPE = new TypeToken<List<CraftDefinition>>() {}.getType();
     private static final Path FILE = FMLPaths.CONFIGDIR.get().resolve("castrosafio_crafts.json");
+    private static final Path BOOKSHELF_MIGRATION = FMLPaths.CONFIGDIR.get().resolve("castrosafio_removed_bookshelf_1_3_7.flag");
     private static final List<CraftDefinition> CRAFTS = new ArrayList<>();
     private static boolean loaded;
 
@@ -43,14 +44,28 @@ public final class CraftConfigManager {
         CRAFTS.removeIf(c -> c == null || c.id < 1 || c.id > MAX_CRAFTS);
         CRAFTS.sort(Comparator.comparingInt(c -> c.id));
         for (CraftDefinition c : CRAFTS) {
-            if (c.name == null || c.name.isBlank()) c.name = "Crafteo " + c.id;
-            if (c.ingredients == null) c.ingredients = new ArrayList<>();
-            while (c.ingredients.size() < 9) c.ingredients.add("");
-            while (c.ingredients.size() > 9) c.ingredients.remove(c.ingredients.size() - 1);
-            for (int i = 0; i < c.ingredients.size(); i++) if (c.ingredients.get(i) == null) c.ingredients.set(i, "");
-            if (c.result == null) c.result = "";
-            if (c.resultAmount < 1) c.resultAmount = 1;
+            sanitize(c);
         }
+
+        // Migracion puntual solicitada para 1.3.7: elimina el Bookshelf que se uso
+        // durante las pruebas, pero solo una vez. Despues el usuario puede volver a
+        // publicarlo normalmente si alguna vez quiere hacerlo.
+        if (!Files.exists(BOOKSHELF_MIGRATION)) {
+            boolean removed = false;
+            for (CraftDefinition craft : CRAFTS) {
+                if ("minecraft:bookshelf".equals(craft.result)) {
+                    resetCraft(craft);
+                    removed = true;
+                }
+            }
+            try {
+                Files.createDirectories(BOOKSHELF_MIGRATION.getParent());
+                Files.writeString(BOOKSHELF_MIGRATION, removed ? "bookshelf removed" : "nothing to remove");
+            } catch (Exception e) {
+                System.err.println("[CastroSafio] No se pudo guardar la migracion del Bookshelf: " + e.getMessage());
+            }
+        }
+
         loaded = true;
         save();
     }
@@ -78,5 +93,24 @@ public final class CraftConfigManager {
     public static synchronized String toJson() {
         ensureLoaded();
         return GSON.toJson(CRAFTS, LIST_TYPE);
+    }
+
+    private static void sanitize(CraftDefinition c) {
+        if (c.name == null || c.name.isBlank()) c.name = "Crafteo " + c.id;
+        if (c.ingredients == null) c.ingredients = new ArrayList<>();
+        while (c.ingredients.size() < 9) c.ingredients.add("");
+        while (c.ingredients.size() > 9) c.ingredients.remove(c.ingredients.size() - 1);
+        for (int i = 0; i < c.ingredients.size(); i++) if (c.ingredients.get(i) == null) c.ingredients.set(i, "");
+        if (c.result == null) c.result = "";
+        if (c.resultAmount < 1) c.resultAmount = 1;
+    }
+
+    private static void resetCraft(CraftDefinition craft) {
+        CraftDefinition fresh = new CraftDefinition(craft.id);
+        craft.name = fresh.name;
+        craft.ingredients = fresh.ingredients;
+        craft.result = fresh.result;
+        craft.resultAmount = fresh.resultAmount;
+        craft.active = false;
     }
 }
