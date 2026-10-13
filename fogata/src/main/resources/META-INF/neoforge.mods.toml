@@ -1,0 +1,27 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="All Rights Reserved"
+
+[[mods]]
+modId="fogata"
+version="1.0.0"
+displayName="Fogata y Cucharas - NeoForge"
+authors="xKevinRv (addon original), CastroSafio (port NeoForge)"
+description='''
+Port para NeoForge 1.21.1 del addon Fogata y cucharas V2.
+Incluye fogata 3D, cuchara/tenedor de resurrección y sistema para revivir jugadores en espectador.
+'''
+
+[[dependencies.fogata]]
+modId="neoforge"
+type="required"
+versionRange="[21.1.0,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.fogata]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1,1.22)"
+ordering="NONE"
+side="BOTH"
