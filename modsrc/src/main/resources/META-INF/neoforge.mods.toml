@@ -3,24 +3,24 @@ loaderVersion="[4,)"
 license="All Rights Reserved"
 
 [[mods]]
-modId="castrosafiomenu"
-version="1.4.0"
-displayName="CastroSafio Menu"
+modId="castrorevive"
+version="1.0.0"
+displayName="CastroSafio Revive"
 authors="CastroSafio"
 description='''
-Interfaz de CastroSafio por elementos separados para cambios de dificultad, nuevos crafteos, misiones diarias y mobs habilitados.
+Ritual de resurreccion sincronizado para NeoForge 1.21.1, inspirado en la secuencia visual de Dedsafio 4. Todos los jugadores pueden verlo sin bloqueo de movimiento ni camara.
 '''
 
-[[dependencies.castrosafiomenu]]
+[[dependencies.castrorevive]]
 modId="neoforge"
 type="required"
 versionRange="[21.1,)"
 ordering="NONE"
-side="CLIENT"
+side="BOTH"
 
-[[dependencies.castrosafiomenu]]
+[[dependencies.castrorevive]]
 modId="minecraft"
 type="required"
 versionRange="[1.21.1,1.21.2)"
 ordering="NONE"
-side="CLIENT"
+side="BOTH"
