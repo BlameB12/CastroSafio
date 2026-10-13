@@ -4,11 +4,11 @@ license="All Rights Reserved"
 
 [[mods]]
 modId="castrosafiomenu"
-version="1.3.8"
+version="1.3.9"
 displayName="CastroSafio Menu"
 authors="CastroSafio"
 description='''
-Interfaz de CastroSafio con editores OP, deteccion universal de recetas de Minecraft/mods/datapacks, borrado visual de crafteos publicados, vista de receta al pasar el mouse, mobs 3D e informacion configurable.
+Interfaz de CastroSafio con editores OP, deteccion universal de recetas de Minecraft/mods/datapacks, soporte visual para mesa de crafteo, herreria, hornos, cortapiedras y RecipeType personalizados, borrado visual de crafteos publicados, mobs 3D e informacion configurable.
 '''
 
 [[dependencies.castrosafiomenu]]
