@@ -1,0 +1,65 @@
+--- a/src/main/java/com/castrosafio/bosscontroller/control/IgnisActionController.java
++++ b/src/main/java/com/castrosafio/bosscontroller/control/IgnisActionController.java
+@@ -3,12 +3,16 @@
+ import com.castrosafio.bosscontroller.CastroSafioBossController;
+ import com.castrosafio.bosscontroller.network.BossActionPayload;
+ import net.minecraft.ChatFormatting;
++import net.minecraft.core.Holder;
+ import net.minecraft.core.registries.BuiltInRegistries;
+ import net.minecraft.network.chat.Component;
+ import net.minecraft.resources.ResourceLocation;
+ import net.minecraft.server.level.ServerPlayer;
++import net.minecraft.world.effect.MobEffect;
++import net.minecraft.world.effect.MobEffectInstance;
+ import net.minecraft.world.entity.LivingEntity;
+ import net.minecraft.world.entity.MoverType;
++import net.minecraft.world.phys.AABB;
+ import net.minecraft.world.phys.Vec3;
+ 
+ import java.lang.reflect.Field;
+@@ -24,6 +28,9 @@
+  */
+ public final class IgnisActionController {
+     private static final ResourceLocation IGNIS_ID = ResourceLocation.fromNamespaceAndPath("cataclysm", "ignis");
++    private static final ResourceLocation CATACLYSM_STUN_ID = ResourceLocation.fromNamespaceAndPath("cataclysm", "stun");
++    private static final double STUN_ROAR_RADIUS = 120.0D;
++    private static final int STUN_ROAR_DURATION_TICKS = 60;
+     private static final Map<UUID, Integer> SELECTED = new HashMap<>();
+     private static final Map<UUID, Double> AIR_VERTICAL_SPEED = new HashMap<>();
+ 
+@@ -120,6 +127,7 @@
+         // Mirror ONLY the original Air Smash movement/landing transitions here; all damage,
+         // particles, sounds and animation timing remain native Cataclysm behavior.
+         tickNativeAirSmashMovement(player, boss);
++        tickExpandedStunRoar(player, boss);
+ 
+         if (!isAnimationIdle(boss)) return;
+ 
+@@ -141,6 +149,27 @@
+         }
+     }
+ 
++    private static void tickExpandedStunRoar(ServerPlayer controller, LivingEntity boss) {
++        if (!isCurrentAnimation(boss, "SHIELD_BREAK_STRIKE") || getAnimationTick(boss) != 17) return;
++
++        Holder<MobEffect> stun = BuiltInRegistries.MOB_EFFECT.getHolder(CATACLYSM_STUN_ID).orElse(null);
++        if (stun == null) {
++            CastroSafioBossController.LOGGER.warn("No se encontro el efecto {} para ampliar el grito de Ignis", CATACLYSM_STUN_ID);
++            return;
++        }
++
++        double radiusSqr = STUN_ROAR_RADIUS * STUN_ROAR_RADIUS;
++        AABB searchBox = boss.getBoundingBox().inflate(STUN_ROAR_RADIUS);
++        for (LivingEntity target : boss.level().getEntitiesOfClass(LivingEntity.class, searchBox, LivingEntity::isAlive)) {
++            if (target == boss || target == controller) continue;
++            if (boss.distanceToSqr(target) > radiusSqr) continue;
++            if (boss.isAlliedTo(target)) continue;
++            if (target instanceof net.minecraft.world.entity.player.Player player && player.getAbilities().invulnerable) continue;
++
++            target.addEffect(new MobEffectInstance(stun, STUN_ROAR_DURATION_TICKS));
++        }
++    }
++
+     private static void tickNativeAirSmashMovement(ServerPlayer player, LivingEntity boss) {
+         int animationTick = getAnimationTick(boss);
+         if (animationTick < 0) {
