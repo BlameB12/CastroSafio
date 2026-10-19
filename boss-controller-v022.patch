@@ -1,0 +1,126 @@
+--- a/src/main/java/com/castrosafio/bosscontroller/control/CataclysmBossMovementBridge.java
++++ b/src/main/java/com/castrosafio/bosscontroller/control/CataclysmBossMovementBridge.java
+@@ -36,7 +36,6 @@
+     public static void tick(ServerPlayer controller, LivingEntity boss) {
+         if (boss == null || !boss.isAlive()) return;
+         ResourceLocation type = BuiltInRegistries.ENTITY_TYPE.getKey(boss.getType());
+-        if (IGNIS.equals(type)) return;
+         if (!isSupported(type)) return;
+ 
+         LivingEntity target = findAutoTarget(controller, boss, 72.0D);
+@@ -47,7 +46,8 @@
+             mob.setTarget(target);
+         }
+ 
+-        if (NETHERITE.equals(type)) tickNetherite(boss, target);
++        if (IGNIS.equals(type)) tickIgnis(boss, target);
++        else if (NETHERITE.equals(type)) tickNetherite(boss, target);
+         else if (REMNANT.equals(type)) tickRemnant(boss, target);
+         else if (SCYLLA.equals(type)) tickScylla(boss, target);
+         else if (MALEDICTUS.equals(type)) tickMaledictus(boss, target);
+@@ -58,11 +58,56 @@
+     }
+ 
+     private static boolean isSupported(ResourceLocation type) {
+-        return NETHERITE.equals(type) || GUARDIAN.equals(type) || HARBINGER.equals(type)
++        return IGNIS.equals(type) || NETHERITE.equals(type) || GUARDIAN.equals(type) || HARBINGER.equals(type)
+                 || REMNANT.equals(type) || LEVIATHAN.equals(type) || SCYLLA.equals(type)
+                 || MALEDICTUS.equals(type);
+     }
+@@ -75,6 +120,45 @@
+ 
+     // -------------------- InternalAnimation bosses --------------------
++
++    /**
++     * Ignis already has its proven phase/air-smash bridge in IgnisActionController.
++     * This method only restores the native horizontal lunges that normally live inside
++     * PokeGoal / Body_Check_Attack while NoAI is active.
++     */
++    private static void tickIgnis(LivingEntity boss, LivingEntity target) {
++        int tick = getAnimationTick(boss);
++        if (tick < 0) return;
++
++        // Poke 1/2/3 are also Ignis' real grab attacks. Cataclysm normally pushes Ignis toward
++        // the target and, on contact, the entity code mounts the victim onto Ignis and switches
++        // to POKED_ATTACK. Direct movement is used here because BossControl clears delta motion.
++        if (isCurrentAnimation(boss, "POKE_ATTACK") && tick >= 34 && tick <= 40) {
++            moveTowardOrForward(boss, target, 2.10D, 1.85D, false);
++        } else if (isCurrentAnimation(boss, "POKE_ATTACK2") && tick >= 28 && tick <= 34) {
++            moveTowardOrForward(boss, target, 2.10D, 1.85D, false);
++        } else if (isCurrentAnimation(boss, "POKE_ATTACK3") && tick >= 24 && tick <= 30) {
++            moveTowardOrForward(boss, target, 2.10D, 1.85D, false);
++        }
++
++        // Body Check is another native Ignis dash. Soul variants launch a little earlier and
++        // harder in the original Goal, so keep separate windows/speeds.
++        boolean normalBody = isCurrentAnimation(boss, "BODY_CHECK_ATTACK1")
++                || isCurrentAnimation(boss, "BODY_CHECK_ATTACK2")
++                || isCurrentAnimation(boss, "BODY_CHECK_ATTACK3")
++                || isCurrentAnimation(boss, "BODY_CHECK_ATTACK4");
++        boolean soulBody = isCurrentAnimation(boss, "BODY_CHECK_ATTACK_SOUL1")
++                || isCurrentAnimation(boss, "BODY_CHECK_ATTACK_SOUL2")
++                || isCurrentAnimation(boss, "BODY_CHECK_ATTACK_SOUL3")
++                || isCurrentAnimation(boss, "BODY_CHECK_ATTACK_SOUL4");
++        if (normalBody && tick >= 20 && tick <= 25) {
++            moveTowardOrForward(boss, target, 1.45D, 1.65D, false);
++        } else if (soulBody && tick >= 16 && tick <= 21) {
++            moveTowardOrForward(boss, target, 1.65D, 1.65D, false);
++        }
++
++        // Swing Uppercut uses Cataclysm's predictive charge Goal; restore the missing lunge.
++        if (isCurrentAnimation(boss, "SWING_UPPERCUT") && tick >= 27 && tick <= 32) {
++            moveTowardOrForward(boss, target, 1.35D, 1.55D, false);
++        }
++    }
+ 
+     private static void tickNetherite(LivingEntity boss, LivingEntity target) {
+         int state = getAttackState(boss);
+--- a/src/main/java/com/castrosafio/bosscontroller/client/BossClientEvents.java
++++ b/src/main/java/com/castrosafio/bosscontroller/client/BossClientEvents.java
+@@ -6,6 +6,8 @@
+ import com.mojang.blaze3d.platform.InputConstants;
+ import net.minecraft.client.CameraType;
+ import net.minecraft.client.Minecraft;
++import net.minecraft.core.registries.BuiltInRegistries;
++import net.minecraft.resources.ResourceLocation;
+ import net.minecraft.client.player.Input;
+ import net.minecraft.world.entity.Entity;
+ import net.minecraft.world.entity.LivingEntity;
+@@ -16,6 +18,7 @@
+ import net.neoforged.neoforge.client.event.ClientTickEvent;
+ import net.neoforged.neoforge.client.event.InputEvent;
+ import net.neoforged.neoforge.client.event.MovementInputUpdateEvent;
++import net.neoforged.neoforge.client.event.CalculateDetachedCameraDistanceEvent;
+ import net.neoforged.neoforge.client.event.RenderFrameEvent;
+ import net.neoforged.neoforge.network.PacketDistributor;
+ import org.lwjgl.glfw.GLFW;
+@@ -23,6 +26,8 @@
+ @EventBusSubscriber(modid = CastroSafioBossController.MODID, value = Dist.CLIENT)
+ public final class BossClientEvents {
++    private static final ResourceLocation LEVIATHAN = ResourceLocation.fromNamespaceAndPath("cataclysm", "the_leviathan");
++
+     private static boolean active;
+     private static CameraType previousCamera;
+     private static int controlledEntityId = -1;
+@@ -56,6 +61,21 @@
+         copyMouseLookToBoss(minecraft, controlled);
+     }
++
++    /**
++     * Leviathan is much longer than the other Cataclysm bosses. Give only this boss a larger
++     * detached-camera distance so its body no longer fills the whole screen. NeoForge applies
++     * normal block collision/raycast after this event, so walls can still bring the camera in.
++     */
++    @SubscribeEvent
++    public static void onDetachedCameraDistance(CalculateDetachedCameraDistanceEvent event) {
++        Minecraft minecraft = Minecraft.getInstance();
++        Entity controlled = getControlledEntity(minecraft);
++        if (controlled == null) return;
++        ResourceLocation type = BuiltInRegistries.ENTITY_TYPE.getKey(controlled.getType());
++        if (LEVIATHAN.equals(type)) {
++            event.setDistance(Math.max(event.getDistance(), 10.0F));
++        }
++    }
+ 
+     @SubscribeEvent
+     public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
