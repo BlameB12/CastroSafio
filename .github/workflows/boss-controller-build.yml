@@ -23,7 +23,7 @@ jobs:
         with:
           gradle-version: '9.2.1'
 
-      - name: Extract source and apply v0.2.5 files
+      - name: Extract source and apply v0.2.6 files
         run: |
           rm -rf boss-controller
           mkdir boss-controller
@@ -48,6 +48,7 @@ jobs:
           python3 boss-controller-v024/apply_v024.py boss-controller
           python3 boss-controller-v025/apply_v025.py boss-controller
           python3 boss-controller-v025/remove_duplicate_helpers.py boss-controller
+          python3 boss-controller-v026/apply_v026.py boss-controller
           python3 - <<'PY'
           from pathlib import Path
           p = Path('boss-controller/src/main/java/com/castrosafio/bosscontroller/client/BossClientEvents.java')
@@ -76,7 +77,7 @@ jobs:
           s = s.replace(needle, insert + needle, 1)
           p.write_text(s)
           PY
-          sed -i 's/^mod_version=.*/mod_version=0.2.5-beta/' boss-controller/gradle.properties
+          sed -i 's/^mod_version=.*/mod_version=0.2.6-beta/' boss-controller/gradle.properties
 
       - name: Build mod
         working-directory: boss-controller
@@ -85,6 +86,6 @@ jobs:
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
-          name: CastroSafio-Boss-Controller-1.21.1-v0.2.5
+          name: CastroSafio-Boss-Controller-1.21.1-v0.2.6
           path: boss-controller/build/libs/*.jar
           if-no-files-found: error
