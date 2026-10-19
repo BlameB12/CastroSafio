@@ -44,6 +44,37 @@ jobs:
           cp boss-controller-v021/CataclysmBossMovementBridge.java boss-controller/src/main/java/com/castrosafio/bosscontroller/control/CataclysmBossMovementBridge.java
           patch -d boss-controller -p1 < boss-controller-v021.patch
           patch -d boss-controller -p1 < boss-controller-v022.patch
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('boss-controller/src/main/java/com/castrosafio/bosscontroller/client/BossClientEvents.java')
+          s = p.read_text()
+          s = s.replace('import net.minecraft.client.Minecraft;\n',
+              'import net.minecraft.client.Minecraft;\nimport net.minecraft.core.registries.BuiltInRegistries;\nimport net.minecraft.resources.ResourceLocation;\n')
+          s = s.replace('import net.neoforged.neoforge.client.event.MovementInputUpdateEvent;\n',
+              'import net.neoforged.neoforge.client.event.MovementInputUpdateEvent;\nimport net.neoforged.neoforge.client.event.CalculateDetachedCameraDistanceEvent;\n')
+          s = s.replace('public final class BossClientEvents {\n',
+              'public final class BossClientEvents {\n    private static final ResourceLocation LEVIATHAN = ResourceLocation.fromNamespaceAndPath("cataclysm", "the_leviathan");\n\n')
+          needle = '''    @SubscribeEvent
+              public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {'''.replace('    public', 'public')
+          # Use the exact source indentation from the class.
+          needle = '    @SubscribeEvent\n    public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {'
+          insert = '''    @SubscribeEvent
+          public static void onDetachedCameraDistance(CalculateDetachedCameraDistanceEvent event) {
+              Minecraft minecraft = Minecraft.getInstance();
+              Entity controlled = getControlledEntity(minecraft);
+              if (controlled == null) return;
+              ResourceLocation type = BuiltInRegistries.ENTITY_TYPE.getKey(controlled.getType());
+              if (LEVIATHAN.equals(type)) {
+                  event.setDistance(Math.max(event.getDistance(), 10.0F));
+              }
+          }
+
+          '''.replace('          public', '    public').replace('              ', '        ').replace('          }', '    }').replace('          ', '    ')
+          if needle not in s:
+              raise SystemExit('BossClientEvents injection point not found')
+          s = s.replace(needle, insert + needle, 1)
+          p.write_text(s)
+          PY
           sed -i 's/^mod_version=.*/mod_version=0.2.2-beta/' boss-controller/gradle.properties
 
       - name: Build mod
