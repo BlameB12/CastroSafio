@@ -23,11 +23,13 @@ jobs:
         with:
           gradle-version: '9.2.1'
 
-      - name: Extract source
+      - name: Extract source and apply patches
         run: |
           rm -rf boss-controller
           mkdir boss-controller
           unzip -q boss-controller-source.zip -d boss-controller
+          cp boss-controller-patches/BossControlManager.java boss-controller/src/main/java/com/castrosafio/bosscontroller/control/BossControlManager.java
+          cp boss-controller-patches/BossClientEvents.java boss-controller/src/main/java/com/castrosafio/bosscontroller/client/BossClientEvents.java
 
       - name: Build mod
         working-directory: boss-controller
