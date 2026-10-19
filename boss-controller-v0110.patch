@@ -1,0 +1,11 @@
+--- a/src/main/java/com/castrosafio/bosscontroller/control/IgnisActionController.java
++++ b/src/main/java/com/castrosafio/bosscontroller/control/IgnisActionController.java
+@@ -30,7 +30,7 @@
+ public final class IgnisActionController {
+     private static final ResourceLocation IGNIS_ID = ResourceLocation.fromNamespaceAndPath("cataclysm", "ignis");
+     private static final ResourceLocation CATACLYSM_STUN_ID = ResourceLocation.fromNamespaceAndPath("cataclysm", "stun");
+     private static final double STUN_ROAR_RADIUS = 120.0D;
+-    private static final int STUN_ROAR_DURATION_TICKS = 60;
++    private static final int STUN_ROAR_DURATION_TICKS = 100;
+     private static final Map<UUID, Integer> SELECTED = new HashMap<>();
+     private static final Map<UUID, Double> AIR_VERTICAL_SPEED = new HashMap<>();
