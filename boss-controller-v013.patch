@@ -1,12 +1,11 @@
 --- a/src/main/java/com/castrosafio/bosscontroller/control/BossControlManager.java
 +++ b/src/main/java/com/castrosafio/bosscontroller/control/BossControlManager.java
-@@ -153,10 +153,17 @@
+@@ -153,10 +153,16 @@
          // Camera/look direction owns the boss rotation. Movement no longer changes where the boss is looking.
          float lookYaw = Mth.wrapDegrees(input.yaw());
          float lookPitch = Mth.clamp(input.pitch(), -90.0F, 90.0F);
-+
-+        // Keep current AND previous render rotations identical. Cataclysm interpolates these values
-+        // heavily; leaving the old body/head angles behind makes Ignis twist/snap while mouse-looking.
++        // Keep current and previous render rotations synchronized. Cataclysm interpolates these
++        // values heavily; stale body/head angles are what caused the twisting/snapping seen on Ignis.
          target.setYRot(lookYaw);
 +        target.yRotO = lookYaw;
          target.setYHeadRot(lookYaw);
@@ -20,7 +19,7 @@
          double strafe = input.strafe();
 --- a/src/main/java/com/castrosafio/bosscontroller/client/BossClientEvents.java
 +++ b/src/main/java/com/castrosafio/bosscontroller/client/BossClientEvents.java
-@@ -77,12 +77,19 @@
+@@ -76,10 +76,14 @@
          float yaw = minecraft.player.getYRot();
          float pitch = minecraft.player.getXRot();
          controlled.setYRot(yaw);
@@ -35,12 +34,3 @@
          }
  
          float forward = (minecraft.options.keyUp.isDown() ? 1.0F : 0.0F)
---- a/gradle.properties
-+++ b/gradle.properties
-@@ -10,5 +10,5 @@
- mod_id=castrosafiobosscontroller
- mod_name=CastroSafio Boss Controller
- mod_license=All Rights Reserved
--mod_version=0.1.2-beta
-+mod_version=0.1.3-beta
- mod_group_id=com.castrosafio.bosscontroller
