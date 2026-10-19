@@ -18,7 +18,7 @@
          else if (REMNANT.equals(type)) tickRemnant(boss, target);
          else if (SCYLLA.equals(type)) tickScylla(boss, target);
          else if (MALEDICTUS.equals(type)) tickMaledictus(boss, target);
-@@ -58,11 +58,56 @@
+@@ -58,7 +58,7 @@
      }
  
      private static boolean isSupported(ResourceLocation type) {
@@ -27,7 +27,7 @@
                  || REMNANT.equals(type) || LEVIATHAN.equals(type) || SCYLLA.equals(type)
                  || MALEDICTUS.equals(type);
      }
-@@ -75,6 +120,45 @@
+@@ -75,5 +75,47 @@
  
      // -------------------- InternalAnimation bosses --------------------
 +
