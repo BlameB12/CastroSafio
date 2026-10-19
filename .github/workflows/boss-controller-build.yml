@@ -50,6 +50,7 @@ jobs:
           python3 boss-controller-v025/remove_duplicate_helpers.py boss-controller
           python3 boss-controller-v026/apply_v026.py boss-controller
           python3 boss-controller-v027/apply_v027.py boss-controller
+          python3 boss-controller-v027/apply_v027b.py boss-controller
           python3 - <<'PY'
           from pathlib import Path
           p = Path('boss-controller/src/main/java/com/castrosafio/bosscontroller/client/BossClientEvents.java')
