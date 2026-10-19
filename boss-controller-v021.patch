@@ -1,0 +1,11 @@
+--- a/src/main/java/com/castrosafio/bosscontroller/control/BossControlManager.java
++++ b/src/main/java/com/castrosafio/bosscontroller/control/BossControlManager.java
+@@ -140,6 +140,7 @@
+             BossInputPayload input = INPUTS.getOrDefault(playerId,
+                     new BossInputPayload(0, 0, 0, player.getYRot(), player.getXRot()));
+             IgnisActionController.tickControlledIgnis(player, target);
+             CataclysmBossActionController.tickControlledBoss(player, target);
++            CataclysmBossMovementBridge.tick(player, target);
+             applyMovement(target, input);
+         }
+     }
