@@ -1,0 +1,41 @@
+name: Build CastroSafio Boss Controller
+
+on:
+  push:
+    branches: [ boss-controller-build ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Extract source
+        run: |
+          rm -rf boss-controller
+          mkdir boss-controller
+          unzip -q boss-controller-source.zip -d boss-controller
+
+      - name: Build mod
+        working-directory: boss-controller
+        run: gradle build --stacktrace
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: CastroSafio-Boss-Controller-1.21.1
+          path: boss-controller/build/libs/*.jar
+          if-no-files-found: error
