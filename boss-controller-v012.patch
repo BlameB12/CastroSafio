@@ -1,0 +1,232 @@
+--- a/src/main/java/com/castrosafio/bosscontroller/control/BossControlManager.java
++++ b/src/main/java/com/castrosafio/bosscontroller/control/BossControlManager.java
+@@ -9,6 +9,7 @@
+ import net.minecraft.util.Mth;
+ import net.minecraft.world.entity.Entity;
+ import net.minecraft.world.entity.LivingEntity;
++import net.minecraft.world.entity.MoverType;
+ import net.minecraft.world.entity.Mob;
+ import net.minecraft.world.entity.decoration.ArmorStand;
+ import net.minecraft.world.phys.Vec3;
+@@ -67,13 +68,13 @@
+         }
+ 
+         ServerLevel level = (ServerLevel) target.level();
+-        ArmorStand seat = new ArmorStand(level, target.getX(), cameraY(target), target.getZ());
++        ArmorStand seat = new ArmorStand(level, target.getX(), cameraSeatY(target), target.getZ());
+         seat.setInvisible(true);
+         seat.setInvulnerable(true);
+         seat.setNoGravity(true);
+         seat.setSilent(true);
+         seat.noPhysics = true;
+-        seat.setCustomName(Component.literal(SEAT_NAME));
++        seat.setCustomName(Component.literal(SEAT_NAME + ":" + target.getId()));
+         seat.setCustomNameVisible(false);
+         level.addFreshEntity(seat);
+ 
+@@ -128,8 +129,9 @@
+                 continue;
+             }
+ 
+-            seat.setPos(target.getX(), cameraY(target), target.getZ());
+-            seat.setYRot(player.getYRot());
++            // Keep the hidden rider attached near the boss. The actual client camera is anchored to the boss itself.
++            seat.setPos(target.getX(), cameraSeatY(target), target.getZ());
++            seat.setYRot(target.getYRot());
+ 
+             if (player.getVehicle() != seat) {
+                 player.startRiding(seat, true);
+@@ -148,6 +150,14 @@
+     }
+ 
+     private static void applyMovement(LivingEntity target, BossInputPayload input) {
++        // Camera/look direction owns the boss rotation. Movement no longer changes where the boss is looking.
++        float lookYaw = Mth.wrapDegrees(input.yaw());
++        float lookPitch = Mth.clamp(input.pitch(), -90.0F, 90.0F);
++        target.setYRot(lookYaw);
++        target.setYHeadRot(lookYaw);
++        target.setYBodyRot(lookYaw);
++        target.setXRot(lookPitch);
++
+         double forward = input.forward();
+         double strafe = input.strafe();
+         double magnitude = Math.sqrt(forward * forward + strafe * strafe);
+@@ -156,31 +166,31 @@
+             strafe /= magnitude;
+         }
+ 
+-        double yawRad = Math.toRadians(input.yaw());
++        double yawRad = Math.toRadians(lookYaw);
+         double dx = -Math.sin(yawRad) * forward + Math.cos(yawRad) * strafe;
+         double dz =  Math.cos(yawRad) * forward + Math.sin(yawRad) * strafe;
+-        double speed = input.sprint() ? 0.72D : 0.42D;
++        double speed = input.sprint() ? 0.70D : 0.38D;
+ 
+-        Vec3 old = target.getDeltaMovement();
+-        double dy = old.y;
+         boolean freeVertical = target.isInWaterOrBubble() || target.isNoGravity();
+-
++        double dy = 0.0D;
+         if (freeVertical) {
+             if (input.jump() && !input.descend()) dy = 0.32D;
+             else if (input.descend() && !input.jump()) dy = -0.32D;
+-            else dy *= 0.60D;
+         } else if (input.jump() && target.onGround()) {
+             dy = 0.52D;
+         }
+ 
+-        if (Math.abs(dx) < 0.0001D && Math.abs(dz) < 0.0001D) {
+-            target.setDeltaMovement(0.0D, dy, 0.0D);
+-        } else {
+-            target.setDeltaMovement(dx * speed, dy, dz * speed);
+-            float moveYaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+-            target.setYRot(moveYaw);
+-            target.setYHeadRot(moveYaw);
++        // Cataclysm bosses can overwrite delta movement during their own tick. Move the entity directly
++        // so WASD always produces a real server-side displacement with collision handling.
++        Vec3 movement = new Vec3(dx * speed, dy, dz * speed);
++        if (movement.lengthSqr() > 0.000001D) {
++            target.move(MoverType.SELF, movement);
++            target.hasImpulse = true;
+         }
++
++        // Do not leave horizontal velocity behind for the boss AI/custom tick to reinterpret.
++        Vec3 after = target.getDeltaMovement();
++        target.setDeltaMovement(0.0D, freeVertical ? 0.0D : after.y, 0.0D);
+     }
+ 
+     public static void stop(ServerPlayer player, boolean notify) {
+@@ -237,7 +247,8 @@
+         return session != null && session.targetId().equals(target.getUUID());
+     }
+ 
+-    private static double cameraY(LivingEntity target) {
+-        return target.getY() + Math.max(1.8D, target.getBbHeight() + 0.8D);
++    private static double cameraSeatY(LivingEntity target) {
++        // The rider is only a hidden control anchor. Camera height comes from the controlled entity eye position on the client.
++        return target.getY() + Math.max(0.25D, target.getBbHeight() * 0.5D);
+     }
+ }
+--- a/src/main/java/com/castrosafio/bosscontroller/client/BossClientEvents.java
++++ b/src/main/java/com/castrosafio/bosscontroller/client/BossClientEvents.java
+@@ -19,6 +19,7 @@
+ public final class BossClientEvents {
+     private static boolean active;
+     private static CameraType previousCamera;
++    private static int controlledEntityId = -1;
+ 
+     private BossClientEvents() {}
+ 
+@@ -43,7 +44,19 @@
+     @SubscribeEvent
+     public static void onClientTick(ClientTickEvent.Post event) {
+         Minecraft minecraft = Minecraft.getInstance();
+-        if (minecraft.player == null || minecraft.level == null || !isControlSeat(minecraft.player.getVehicle())) {
++        if (minecraft.player == null || minecraft.level == null) {
++            deactivate(minecraft);
++            return;
++        }
++
++        int targetId = getControlledEntityId(minecraft.player.getVehicle());
++        if (targetId < 0) {
++            deactivate(minecraft);
++            return;
++        }
++
++        Entity controlled = minecraft.level.getEntity(targetId);
++        if (controlled == null) {
+             deactivate(minecraft);
+             return;
+         }
+@@ -52,8 +65,23 @@
+             active = true;
+             previousCamera = minecraft.options.getCameraType();
+         }
++        controlledEntityId = targetId;
++        minecraft.setCameraEntity(controlled);
+         minecraft.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+ 
++        // Minecraft always applies raw mouse movement to the local player, even when another
++        // entity is being used as the camera. Use the hidden rider as our mouse-look controller
++        // and mirror that rotation onto the boss immediately so the camera responds without
++        // waiting for a server round-trip.
++        float yaw = minecraft.player.getYRot();
++        float pitch = minecraft.player.getXRot();
++        controlled.setYRot(yaw);
++        controlled.setXRot(pitch);
++        if (controlled instanceof net.minecraft.world.entity.LivingEntity living) {
++            living.setYHeadRot(yaw);
++            living.setYBodyRot(yaw);
++        }
++
+         float forward = (minecraft.options.keyUp.isDown() ? 1.0F : 0.0F)
+                 - (minecraft.options.keyDown.isDown() ? 1.0F : 0.0F);
+         float strafe = (minecraft.options.keyLeft.isDown() ? 1.0F : 0.0F)
+@@ -64,27 +92,42 @@
+         if (minecraft.options.keyShift.isDown()) flags |= BossInputPayload.FLAG_DESCEND;
+         if (minecraft.options.keySprint.isDown()) flags |= BossInputPayload.FLAG_SPRINT;
+ 
++        // Send the mouse-look direction tracked by the hidden local player.
+         PacketDistributor.sendToServer(new BossInputPayload(
+                 forward,
+                 strafe,
+                 flags,
+-                minecraft.player.getYRot(),
+-                minecraft.player.getXRot()
++                yaw,
++                pitch
+         ));
+     }
+ 
+     private static boolean isControlSeat(Entity vehicle) {
+-        return vehicle instanceof ArmorStand
+-                && vehicle.getCustomName() != null
+-                && BossControlManager.SEAT_NAME.equals(vehicle.getCustomName().getString());
++        return getControlledEntityId(vehicle) >= 0;
++    }
++
++    private static int getControlledEntityId(Entity vehicle) {
++        if (!(vehicle instanceof ArmorStand) || vehicle.getCustomName() == null) return -1;
++        String name = vehicle.getCustomName().getString();
++        String prefix = BossControlManager.SEAT_NAME + ":";
++        if (!name.startsWith(prefix)) return -1;
++        try {
++            return Integer.parseInt(name.substring(prefix.length()));
++        } catch (NumberFormatException ignored) {
++            return -1;
++        }
+     }
+ 
+     private static void deactivate(Minecraft minecraft) {
+         if (!active) return;
++        if (minecraft.player != null) {
++            minecraft.setCameraEntity(minecraft.player);
++        }
+         if (previousCamera != null) {
+             minecraft.options.setCameraType(previousCamera);
+         }
+         active = false;
++        controlledEntityId = -1;
+         previousCamera = null;
+     }
+ }
+--- a/src/main/java/com/castrosafio/bosscontroller/control/BossEvents.java
++++ b/src/main/java/com/castrosafio/bosscontroller/control/BossEvents.java
+@@ -26,7 +26,7 @@
+     }
+ 
+     @SubscribeEvent
+-    public static void onServerTick(ServerTickEvent.Pre event) {
++    public static void onServerTick(ServerTickEvent.Post event) {
+         BossControlManager.tick(event.getServer());
+     }
+ 
+--- a/gradle.properties
++++ b/gradle.properties
+@@ -10,5 +10,5 @@
+ mod_id=castrosafiobosscontroller
+ mod_name=CastroSafio Boss Controller
+ mod_license=All Rights Reserved
+-mod_version=0.1.0-beta
++mod_version=0.1.2-beta
+ mod_group_id=com.castrosafio.bosscontroller
