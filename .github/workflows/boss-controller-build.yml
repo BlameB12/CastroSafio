@@ -32,7 +32,11 @@ jobs:
           cp boss-controller-patches/BossClientEvents.java boss-controller/src/main/java/com/castrosafio/bosscontroller/client/BossClientEvents.java
           patch -d boss-controller -p1 < boss-controller-v012.patch
           patch -d boss-controller -p1 < boss-controller-v013.patch
-          sed -i 's/mod_version=0.1.2-beta/mod_version=0.1.3-beta/' boss-controller/gradle.properties
+          cp boss-controller-v014/BossClientEvents.java boss-controller/src/main/java/com/castrosafio/bosscontroller/client/BossClientEvents.java
+          cp boss-controller-v014/BossNetwork.java boss-controller/src/main/java/com/castrosafio/bosscontroller/network/BossNetwork.java
+          cp boss-controller-v014/BossActionPayload.java boss-controller/src/main/java/com/castrosafio/bosscontroller/network/BossActionPayload.java
+          cp boss-controller-v014/IgnisActionController.java boss-controller/src/main/java/com/castrosafio/bosscontroller/control/IgnisActionController.java
+          sed -i 's/mod_version=0.1.2-beta/mod_version=0.1.4-beta/' boss-controller/gradle.properties
 
       - name: Build mod
         working-directory: boss-controller
@@ -41,6 +45,6 @@ jobs:
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
-          name: CastroSafio-Boss-Controller-1.21.1-v0.1.3
+          name: CastroSafio-Boss-Controller-1.21.1-v0.1.4
           path: boss-controller/build/libs/*.jar
           if-no-files-found: error
