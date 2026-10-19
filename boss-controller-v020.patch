@@ -1,0 +1,62 @@
+--- a/src/main/java/com/castrosafio/bosscontroller/control/BossControlManager.java
++++ b/src/main/java/com/castrosafio/bosscontroller/control/BossControlManager.java
+@@ -91,6 +91,7 @@
+         TARGET_OWNERS.put(target.getUUID(), player.getUUID());
+         INPUTS.put(player.getUUID(), new BossInputPayload(0, 0, 0, player.getYRot(), player.getXRot()));
+         IgnisActionController.onControlStarted(player, target);
++        CataclysmBossActionController.onControlStarted(player, target);
+ 
+         return Component.literal("Controlando: ").withStyle(ChatFormatting.GREEN)
+                 .append(target.getDisplayName())
+@@ -139,6 +140,7 @@
+             BossInputPayload input = INPUTS.getOrDefault(playerId,
+                     new BossInputPayload(0, 0, 0, player.getYRot(), player.getXRot()));
+             IgnisActionController.tickControlledIgnis(player, target);
++            CataclysmBossActionController.tickControlledBoss(player, target);
+             applyMovement(target, input);
+         }
+     }
+@@ -195,6 +197,7 @@
+         BossControlSession session = SESSIONS.remove(player.getUUID());
+         INPUTS.remove(player.getUUID());
+         IgnisActionController.clear(player.getUUID());
++        CataclysmBossActionController.clear(player.getUUID());
+         if (session == null) return;
+ 
+         TARGET_OWNERS.remove(session.targetId());
+@@ -224,6 +227,7 @@
+         BossControlSession session = SESSIONS.remove(playerId);
+         INPUTS.remove(playerId);
+         IgnisActionController.clear(playerId);
++        CataclysmBossActionController.clear(playerId);
+         if (session == null) return;
+         TARGET_OWNERS.remove(session.targetId());
+         ServerLevel level = server.getLevel(session.levelKey());
+@@ -244,6 +248,7 @@
+         INPUTS.clear();
+         TARGET_OWNERS.clear();
+         IgnisActionController.clearAll();
++        CataclysmBossActionController.clearAll();
+     }
+ 
+     public static boolean isControlledTarget(ServerPlayer player, Entity target) {
+--- a/src/main/java/com/castrosafio/bosscontroller/network/BossNetwork.java
++++ b/src/main/java/com/castrosafio/bosscontroller/network/BossNetwork.java
+@@ -1,7 +1,7 @@
+ package com.castrosafio.bosscontroller.network;
+ 
+ import com.castrosafio.bosscontroller.control.BossControlManager;
+-import com.castrosafio.bosscontroller.control.IgnisActionController;
++import com.castrosafio.bosscontroller.control.CataclysmBossActionController;
+ import net.minecraft.server.level.ServerPlayer;
+ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+ import net.neoforged.neoforge.network.handling.IPayloadContext;
+@@ -23,7 +23,7 @@
+ 
+     private static void handleAction(BossActionPayload payload, IPayloadContext context) {
+         if (context.player() instanceof ServerPlayer player) {
+-            IgnisActionController.handle(player, payload.action());
++            CataclysmBossActionController.handle(player, payload.action());
+         }
+     }
+ }
