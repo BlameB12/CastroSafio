@@ -23,7 +23,7 @@ jobs:
         with:
           gradle-version: '9.2.1'
 
-      - name: Extract source and apply v0.1.9 files
+      - name: Extract source and apply v0.1.10 files
         run: |
           rm -rf boss-controller
           mkdir boss-controller
@@ -38,7 +38,8 @@ jobs:
           cp boss-controller-v015/BossActionPayload.java boss-controller/src/main/java/com/castrosafio/bosscontroller/network/BossActionPayload.java
           cp boss-controller-v018/IgnisActionController.java boss-controller/src/main/java/com/castrosafio/bosscontroller/control/IgnisActionController.java
           patch -d boss-controller -p1 < boss-controller-v019.patch
-          sed -i 's/^mod_version=.*/mod_version=0.1.9-beta/' boss-controller/gradle.properties
+          patch -d boss-controller -p1 < boss-controller-v0110.patch
+          sed -i 's/^mod_version=.*/mod_version=0.1.10-beta/' boss-controller/gradle.properties
 
       - name: Build mod
         working-directory: boss-controller
@@ -47,6 +48,6 @@ jobs:
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
-          name: CastroSafio-Boss-Controller-1.21.1-v0.1.9
+          name: CastroSafio-Boss-Controller-1.21.1-v0.1.10
           path: boss-controller/build/libs/*.jar
           if-no-files-found: error
