@@ -23,7 +23,7 @@ jobs:
         with:
           gradle-version: '9.2.1'
 
-      - name: Extract source and apply patches
+      - name: Extract source and apply v0.1.5 files
         run: |
           rm -rf boss-controller
           mkdir boss-controller
@@ -32,12 +32,12 @@ jobs:
           cp boss-controller-patches/BossClientEvents.java boss-controller/src/main/java/com/castrosafio/bosscontroller/client/BossClientEvents.java
           patch -d boss-controller -p1 < boss-controller-v012.patch
           patch -d boss-controller -p1 < boss-controller-v013.patch
-          cp boss-controller-v014/BossClientEvents.java boss-controller/src/main/java/com/castrosafio/bosscontroller/client/BossClientEvents.java
           cp boss-controller-v014/BossNetwork.java boss-controller/src/main/java/com/castrosafio/bosscontroller/network/BossNetwork.java
-          cp boss-controller-v014/BossActionPayload.java boss-controller/src/main/java/com/castrosafio/bosscontroller/network/BossActionPayload.java
-          cp boss-controller-v014/IgnisActionController.java boss-controller/src/main/java/com/castrosafio/bosscontroller/control/IgnisActionController.java
-          sed -i 's/mod_version=0.1.2-beta/mod_version=0.1.4-beta/' boss-controller/gradle.properties
-          patch -d boss-controller -p1 < boss-controller-v015.patch
+          cp boss-controller-v015/BossClientEvents.java boss-controller/src/main/java/com/castrosafio/bosscontroller/client/BossClientEvents.java
+          cp boss-controller-v015/BossControlManager.java boss-controller/src/main/java/com/castrosafio/bosscontroller/control/BossControlManager.java
+          cp boss-controller-v015/BossActionPayload.java boss-controller/src/main/java/com/castrosafio/bosscontroller/network/BossActionPayload.java
+          cp boss-controller-v015/IgnisActionController.java boss-controller/src/main/java/com/castrosafio/bosscontroller/control/IgnisActionController.java
+          sed -i 's/^mod_version=.*/mod_version=0.1.5-beta/' boss-controller/gradle.properties
 
       - name: Build mod
         working-directory: boss-controller
