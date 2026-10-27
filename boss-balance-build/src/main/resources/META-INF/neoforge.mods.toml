@@ -1,0 +1,27 @@
+modLoader="javafml"
+loaderVersion="[1,)"
+license="All Rights Reserved"
+
+[[mods]]
+modId="castrosafio_boss_balance"
+version="1.0.0-beta.1"
+displayName="CastroSafio Boss Balance"
+authors="CastroSafio"
+description='''
+Endgame boss and miniboss rebalance for CastroSafio.
+Keeps normal mobs and Apothic Invaders/Elites untouched while making bosses dangerous, resistant to burst damage and immune to hard crowd-control/execute effects.
+'''
+
+[[dependencies.castrosafio_boss_balance]]
+modId="neoforge"
+type="required"
+versionRange="[21.1.264,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.castrosafio_boss_balance]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1]"
+ordering="NONE"
+side="BOTH"
