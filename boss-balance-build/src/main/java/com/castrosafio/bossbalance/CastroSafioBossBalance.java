@@ -38,6 +38,7 @@ public final class CastroSafioBossBalance {
 
     private static final Map<UUID, Tier> TIERS = new ConcurrentHashMap<>();
     private static final Map<UUID, HealDebuff> HEAL_DEBUFFS = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> SPAWN_HEALTH_GUARDS = new ConcurrentHashMap<>();
 
     private static final Set<String> EXPLICIT_BOSSES = Set.of(
             "minecraft:ender_dragon",
@@ -122,7 +123,7 @@ public final class CastroSafioBossBalance {
     private static final String[] HARD_CC_KEYWORDS = {
             "frozen", "freeze", "freezing", "stun", "paraly", "paralys", "parálisis",
             "immobil", "root", "rooted", "stasis", "petrif", "timestop", "time_stop",
-            "time_stop", "incapac", "bind"
+            "incapac", "bind"
     };
 
     private static final String[] EXECUTE_KEYWORDS = {
@@ -143,6 +144,7 @@ public final class CastroSafioBossBalance {
 
         if (isApothicSpecial(living)) {
             TIERS.remove(living.getUUID());
+            SPAWN_HEALTH_GUARDS.remove(living.getUUID());
             removeOurModifiers(living);
             return;
         }
@@ -153,6 +155,7 @@ public final class CastroSafioBossBalance {
         }
 
         applyBalanceModifiers(living, tier);
+        maintainInitialFullHealth(living);
 
         // Prevent vanilla-style freezing from locking protected encounters down.
         if (living.getTicksFrozen() > 0) {
@@ -203,10 +206,15 @@ public final class CastroSafioBossBalance {
 
         Tier targetTier = getTier(target);
         if (targetTier != Tier.NONE) {
-            float cap = target.getMaxHealth() * (targetTier == Tier.BOSS ? 0.075F : 0.11F);
-            if (currentDamage > cap) {
-                event.setNewDamage(cap);
-            }
+            // The first real hit ends the spawn/init health guard permanently for this encounter.
+            // This prevents boss mods that re-apply their base HP a few ticks after spawning from
+            // collapsing a 1000+ HP balanced boss back to ~200 HP, while never healing during combat.
+            SPAWN_HEALTH_GUARDS.remove(target.getUUID());
+
+            float maxHealth = target.getMaxHealth();
+            float cap = maxHealth * (targetTier == Tier.BOSS ? 0.04F : 0.07F);
+            float mitigated = currentDamage * (targetTier == Tier.BOSS ? 0.60F : 0.78F);
+            event.setNewDamage(Math.min(mitigated, cap));
             return;
         }
 
@@ -342,16 +350,21 @@ public final class CastroSafioBossBalance {
         AttributeInstance health = living.getAttribute(Attributes.MAX_HEALTH);
         if (health != null && health.getModifier(BOSS_HEALTH_MOD) == null) {
             float oldMax = living.getMaxHealth();
+            boolean wasFull = living.getHealth() >= oldMax - 0.5F;
             double multiplier = healthMultiplier(oldMax, tier);
+
             health.addTransientModifier(new AttributeModifier(
                     BOSS_HEALTH_MOD,
                     multiplier - 1.0D,
                     AttributeModifier.Operation.ADD_MULTIPLIED_BASE
             ));
 
-            // Fresh/full-health bosses remain full after scaling; already-damaged bosses preserve their damage state.
-            if (living.getHealth() >= oldMax - 0.5F) {
+            if (wasFull) {
                 living.setHealth(living.getMaxHealth());
+                // Some boss mods overwrite current HP shortly after spawn. For up to five seconds,
+                // keep a fresh boss full until the very first genuine damage event. The guard is
+                // removed immediately on that first hit, so this can never heal an active fight.
+                SPAWN_HEALTH_GUARDS.put(living.getUUID(), living.level().getGameTime() + 100L);
             }
         }
 
@@ -365,7 +378,25 @@ public final class CastroSafioBossBalance {
         }
     }
 
+    private static void maintainInitialFullHealth(LivingEntity living) {
+        Long expiresAt = SPAWN_HEALTH_GUARDS.get(living.getUUID());
+        if (expiresAt == null) {
+            return;
+        }
+
+        if (!living.isAlive() || living.level().getGameTime() > expiresAt) {
+            SPAWN_HEALTH_GUARDS.remove(living.getUUID());
+            return;
+        }
+
+        if (living.getHealth() < living.getMaxHealth() - 0.5F) {
+            living.setHealth(living.getMaxHealth());
+        }
+    }
+
     private static void removeOurModifiers(LivingEntity living) {
+        SPAWN_HEALTH_GUARDS.remove(living.getUUID());
+
         AttributeInstance health = living.getAttribute(Attributes.MAX_HEALTH);
         if (health != null && health.getModifier(BOSS_HEALTH_MOD) != null) {
             health.removeModifier(BOSS_HEALTH_MOD);
@@ -382,15 +413,17 @@ public final class CastroSafioBossBalance {
 
     private static double healthMultiplier(float oldMax, Tier tier) {
         if (tier == Tier.MINIBOSS) {
-            if (oldMax <= 100F) return 3.0D;
-            if (oldMax <= 250F) return 2.4D;
-            return 2.0D;
+            if (oldMax <= 100F) return 4.0D;
+            if (oldMax <= 250F) return 3.2D;
+            return 2.5D;
         }
 
-        if (oldMax <= 150F) return 5.0D;
-        if (oldMax <= 350F) return 4.0D;
-        if (oldMax <= 800F) return 3.2D;
-        return 2.6D;
+        // Singleplayer endgame / Apotheosis profile: bosses must survive long enough to use
+        // their mechanics. The incoming-damage limiter below prevents burst from bypassing this.
+        if (oldMax <= 150F) return 10.0D;
+        if (oldMax <= 350F) return 8.0D;
+        if (oldMax <= 800F) return 6.0D;
+        return 4.5D;
     }
 
     private static boolean containsAny(String text, String[] needles) {
