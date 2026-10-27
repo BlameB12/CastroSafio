@@ -108,11 +108,8 @@ public final class BossBalanceEvents {
         long combatUntil = data.getLong(PLAYER_COMBAT_UNTIL);
         long legitUntil = data.getLong(LEGIT_LETHAL_UNTIL);
 
-        // Manual /kill outside active player combat must remain available for debugging.
         if (event.getSource().is(DamageTypes.GENERIC_KILL) && now >= combatUntil) return;
 
-        // If a player is fighting this boss and no normal damage event was legitimately lethal,
-        // treat the death as an execute/instant-kill and cancel it.
         if (now < combatUntil && now > legitUntil) {
             event.setCanceled(true);
             float rescueHealth = Math.max(1.0F, entity.getMaxHealth() * 0.05F);
@@ -133,7 +130,8 @@ public final class BossBalanceEvents {
             multiplier - 1.0D,
             AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL
         );
-        maxHealth.addPermanentModifier(modifier);
+        // Transient on purpose: removing the mod restores existing entities to their native attributes.
+        maxHealth.addTransientModifier(modifier);
         living.setHealth(Math.max(1.0F, living.getMaxHealth() * ratio));
     }
 
@@ -155,7 +153,6 @@ public final class BossBalanceEvents {
         DamageSource source = event.getSource();
         long now = boss.level().getGameTime();
 
-        // Admin /kill remains an escape hatch when not part of a normal combat hit.
         if (source.is(DamageTypes.GENERIC_KILL) && source.getEntity() == null) return;
 
         boss.getPersistentData().putLong(PLAYER_COMBAT_UNTIL, now + 40L);
@@ -174,7 +171,6 @@ public final class BossBalanceEvents {
         float current = event.getNewDamage();
         if (current <= 0.0F) return;
 
-        // A successful shield/block should remain a real skillful counter.
         if (event.getContainer().getBlockedDamage() > 0.01F) return;
 
         float original = event.getOriginalDamage();
