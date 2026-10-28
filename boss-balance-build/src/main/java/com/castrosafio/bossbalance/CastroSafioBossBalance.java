@@ -97,11 +97,6 @@ public final class CastroSafioBossBalance {
             "mowziesmobs:sculptor"
     );
 
-    /**
-     * Namespaces that predominantly contain boss/miniboss encounters in this pack.
-     * Unknown entities from these mods are classified by their pre-balance max HP.
-     * Ice and Fire is deliberately absent so normal dragons keep their original CC interactions.
-     */
     private static final Set<String> BOSS_MOD_NAMESPACES = Set.of(
             "cataclysm",
             "mowziesmobs",
@@ -142,7 +137,12 @@ public final class CastroSafioBossBalance {
             return;
         }
 
-        if (isApothicSpecial(living)) {
+        String id = BuiltInRegistries.ENTITY_TYPE.getKey(living.getType()).toString();
+        boolean explicitEncounter = EXPLICIT_BOSSES.contains(id) || EXPLICIT_MINIBOSSES.contains(id);
+
+        // Explicit native bosses always win. This prevents generic Apotheosis/Apothic metadata
+        // attached to normal entities from accidentally removing our balance modifier.
+        if (!explicitEncounter && isApothicSpecial(living)) {
             TIERS.remove(living.getUUID());
             SPAWN_HEALTH_GUARDS.remove(living.getUUID());
             removeOurModifiers(living);
@@ -157,7 +157,6 @@ public final class CastroSafioBossBalance {
         applyBalanceModifiers(living, tier);
         maintainInitialFullHealth(living);
 
-        // Prevent vanilla-style freezing from locking protected encounters down.
         if (living.getTicksFrozen() > 0) {
             living.setTicksFrozen(0);
         }
@@ -188,7 +187,6 @@ public final class CastroSafioBossBalance {
             return;
         }
 
-        // Protect against execute/instant-death damage types without making the boss immortal to normal damage.
         String damageId = event.getSource().getMsgId().toLowerCase();
         if (containsAny(damageId, EXECUTE_KEYWORDS)) {
             event.setCanceled(true);
@@ -200,15 +198,11 @@ public final class CastroSafioBossBalance {
         LivingEntity target = event.getEntity();
         float currentDamage = event.getNewDamage();
         if (currentDamage <= 0.0001F) {
-            // Preserve shields, full blocks and genuine immunities.
             return;
         }
 
         Tier targetTier = getTier(target);
         if (targetTier != Tier.NONE) {
-            // The first real hit ends the spawn/init health guard permanently for this encounter.
-            // This prevents boss mods that re-apply their base HP a few ticks after spawning from
-            // collapsing a 1000+ HP balanced boss back to ~200 HP, while never healing during combat.
             SPAWN_HEALTH_GUARDS.remove(target.getUUID());
 
             float maxHealth = target.getMaxHealth();
@@ -248,7 +242,6 @@ public final class CastroSafioBossBalance {
             postArmorBoost = 1.08F;
         }
 
-        // Enrage: the last 30% is more threatening, but still respects the anti-one-shot cap.
         if (attacker.getMaxHealth() > 0F && attacker.getHealth() / attacker.getMaxHealth() <= 0.30F) {
             floorPct *= attackerTier == Tier.BOSS ? 1.20F : 1.10F;
             postArmorBoost *= attackerTier == Tier.BOSS ? 1.10F : 1.05F;
@@ -260,9 +253,9 @@ public final class CastroSafioBossBalance {
 
         long now = player.level().getGameTime();
         if (attackerTier == Tier.BOSS) {
-            HEAL_DEBUFFS.put(player.getUUID(), new HealDebuff(now + 120L, 0.60F)); // -40% for 6s
+            HEAL_DEBUFFS.put(player.getUUID(), new HealDebuff(now + 120L, 0.60F));
         } else {
-            HEAL_DEBUFFS.put(player.getUUID(), new HealDebuff(now + 80L, 0.75F));  // -25% for 4s
+            HEAL_DEBUFFS.put(player.getUUID(), new HealDebuff(now + 80L, 0.75F));
         }
     }
 
@@ -290,7 +283,19 @@ public final class CastroSafioBossBalance {
             return Tier.NONE;
         }
 
-        // This check always wins, even if the entity was previously cached as a boss.
+        String id = BuiltInRegistries.ENTITY_TYPE.getKey(living.getType()).toString();
+
+        // Native encounters explicitly selected for CastroSafio are always balanced, even if
+        // another mod attaches generic compatibility metadata to them later in the tick.
+        if (EXPLICIT_BOSSES.contains(id)) {
+            TIERS.put(living.getUUID(), Tier.BOSS);
+            return Tier.BOSS;
+        }
+        if (EXPLICIT_MINIBOSSES.contains(id)) {
+            TIERS.put(living.getUUID(), Tier.MINIBOSS);
+            return Tier.MINIBOSS;
+        }
+
         if (isApothicSpecial(living)) {
             TIERS.remove(living.getUUID());
             return Tier.NONE;
@@ -301,27 +306,19 @@ public final class CastroSafioBossBalance {
             return cached;
         }
 
-        String id = BuiltInRegistries.ENTITY_TYPE.getKey(living.getType()).toString();
-        Tier tier;
+        ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(living.getType());
+        if (!BOSS_MOD_NAMESPACES.contains(key.getNamespace())) {
+            return Tier.NONE;
+        }
 
-        if (EXPLICIT_BOSSES.contains(id)) {
+        float hp = living.getMaxHealth();
+        Tier tier;
+        if (hp >= 180F) {
             tier = Tier.BOSS;
-        } else if (EXPLICIT_MINIBOSSES.contains(id)) {
+        } else if (hp >= 70F) {
             tier = Tier.MINIBOSS;
         } else {
-            ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(living.getType());
-            if (!BOSS_MOD_NAMESPACES.contains(key.getNamespace())) {
-                return Tier.NONE;
-            }
-
-            float hp = living.getMaxHealth();
-            if (hp >= 180F) {
-                tier = Tier.BOSS;
-            } else if (hp >= 70F) {
-                tier = Tier.MINIBOSS;
-            } else {
-                return Tier.NONE;
-            }
+            return Tier.NONE;
         }
 
         TIERS.put(living.getUUID(), tier);
@@ -330,16 +327,18 @@ public final class CastroSafioBossBalance {
 
     private static boolean isApothicSpecial(LivingEntity entity) {
         CompoundTag data = entity.getPersistentData();
-        for (String key : data.getAllKeys()) {
-            String lower = key.toLowerCase();
-            if (lower.startsWith("apoth.boss") || lower.startsWith("apoth.miniboss") || lower.contains("apotheosis") || lower.contains("apothic")) {
-                return true;
-            }
+
+        // Apotheosis 1.21.x uses these concrete persistent-data keys for Invaders/Elites.
+        // Do NOT use broad "contains apothic/apotheosis" matching: generic compatibility data
+        // may be attached to ordinary mobs and native bosses, which caused Frostmaw's buff to vanish.
+        if (data.contains("apoth.boss") || data.contains("apoth.miniboss")) {
+            return true;
         }
 
         for (String tag : entity.getTags()) {
             String lower = tag.toLowerCase();
-            if (lower.contains("apoth.boss") || lower.contains("apoth.miniboss") || lower.contains("apotheosis") || lower.contains("apothic")) {
+            if (lower.equals("apoth.boss") || lower.startsWith("apoth.boss.")
+                    || lower.equals("apoth.miniboss") || lower.startsWith("apoth.miniboss.")) {
                 return true;
             }
         }
@@ -361,9 +360,6 @@ public final class CastroSafioBossBalance {
 
             if (wasFull) {
                 living.setHealth(living.getMaxHealth());
-                // Some boss mods overwrite current HP shortly after spawn. For up to five seconds,
-                // keep a fresh boss full until the very first genuine damage event. The guard is
-                // removed immediately on that first hit, so this can never heal an active fight.
                 SPAWN_HEALTH_GUARDS.put(living.getUUID(), living.level().getGameTime() + 100L);
             }
         }
@@ -418,8 +414,6 @@ public final class CastroSafioBossBalance {
             return 2.5D;
         }
 
-        // Singleplayer endgame / Apotheosis profile: bosses must survive long enough to use
-        // their mechanics. The incoming-damage limiter below prevents burst from bypassing this.
         if (oldMax <= 150F) return 10.0D;
         if (oldMax <= 350F) return 8.0D;
         if (oldMax <= 800F) return 6.0D;
