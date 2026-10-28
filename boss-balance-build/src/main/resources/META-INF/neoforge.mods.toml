@@ -2,6 +2,9 @@ modLoader="javafml"
 loaderVersion="[1,)"
 license="All Rights Reserved"
 
+[[mixins]]
+config="castrosafio_boss_balance.mixins.json"
+
 [[mods]]
 modId="castrosafio_boss_balance"
 version="1.0.0-beta.1"
