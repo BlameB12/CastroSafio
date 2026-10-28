@@ -37,11 +37,14 @@ public final class CastroSafioBossBalance {
     private static final ResourceLocation BOSS_HEALTH_MOD = ResourceLocation.fromNamespaceAndPath(MOD_ID, "boss_health");
     private static final ResourceLocation BOSS_DAMAGE_MOD = ResourceLocation.fromNamespaceAndPath(MOD_ID, "boss_damage");
 
+    private static final float EXECUTE_SAFE_FRACTION = 0.27F;
+
     private static final Map<UUID, Tier> TIERS = new ConcurrentHashMap<>();
     private static final Map<UUID, HealDebuff> HEAL_DEBUFFS = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> SPAWN_HEALTH_GUARDS = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> LEGITIMATE_DEATH_WINDOWS = new ConcurrentHashMap<>();
     private static final Map<UUID, Float> LAST_SAFE_HEALTH = new ConcurrentHashMap<>();
+    private static final Map<UUID, Float> FINAL_PHASE_VIRTUAL_HP = new ConcurrentHashMap<>();
 
     private static final Set<String> EXPLICIT_BOSSES = Set.of(
             "minecraft:ender_dragon",
@@ -145,9 +148,7 @@ public final class CastroSafioBossBalance {
 
         if (!explicitEncounter && isApothicSpecial(living)) {
             TIERS.remove(living.getUUID());
-            SPAWN_HEALTH_GUARDS.remove(living.getUUID());
-            LEGITIMATE_DEATH_WINDOWS.remove(living.getUUID());
-            LAST_SAFE_HEALTH.remove(living.getUUID());
+            clearDeathTracking(living);
             removeOurModifiers(living);
             return;
         }
@@ -159,6 +160,7 @@ public final class CastroSafioBossBalance {
 
         applyBalanceModifiers(living, tier);
         maintainInitialFullHealth(living);
+        maintainExecuteShieldFloor(living);
 
         if (living.getHealth() > 0.0F) {
             LAST_SAFE_HEALTH.put(living.getUUID(), living.getHealth());
@@ -221,16 +223,44 @@ public final class CastroSafioBossBalance {
             float cap = maxHealth * (targetTier == Tier.BOSS ? 0.04F : 0.07F);
             float mitigated = currentDamage * (targetTier == Tier.BOSS ? 0.60F : 0.78F);
             float finalDamage = Math.min(mitigated, cap);
-            event.setNewDamage(finalDamage);
+
+            UUID id = target.getUUID();
+            Float virtualHp = FINAL_PHASE_VIRTUAL_HP.get(id);
+            float executeFloor = maxHealth * EXECUTE_SAFE_FRACTION;
+            long now = target.level().getGameTime();
+
+            if (virtualHp != null) {
+                if (finalDamage >= virtualHp - 0.0001F) {
+                    FINAL_PHASE_VIRTUAL_HP.remove(id);
+                    LEGITIMATE_DEATH_WINDOWS.put(id, now + 2L);
+                    event.setNewDamage(target.getHealth() + 1.0F);
+                    return;
+                }
+
+                FINAL_PHASE_VIRTUAL_HP.put(id, virtualHp - finalDamage);
+                if (target.getHealth() < executeFloor) {
+                    target.setHealth(executeFloor);
+                }
+                LAST_SAFE_HEALTH.put(id, executeFloor);
+                event.setNewDamage(0.0F);
+                return;
+            }
 
             float healthAfterHit = target.getHealth() - finalDamage;
-            long now = target.level().getGameTime();
+            if (targetTier == Tier.BOSS && healthAfterHit > 0.0001F && healthAfterHit <= executeFloor) {
+                FINAL_PHASE_VIRTUAL_HP.put(id, healthAfterHit);
+                float allowedVisibleDamage = Math.max(0.0F, target.getHealth() - executeFloor);
+                event.setNewDamage(allowedVisibleDamage);
+                LAST_SAFE_HEALTH.put(id, executeFloor);
+                return;
+            }
+
+            event.setNewDamage(finalDamage);
             if (healthAfterHit <= 0.0001F) {
-                // Only a real, processed lethal hit is allowed to kill a protected encounter.
-                LEGITIMATE_DEATH_WINDOWS.put(target.getUUID(), now + 2L);
+                LEGITIMATE_DEATH_WINDOWS.put(id, now + 2L);
             } else {
-                LEGITIMATE_DEATH_WINDOWS.remove(target.getUUID());
-                LAST_SAFE_HEALTH.put(target.getUUID(), Math.max(1.0F, healthAfterHit));
+                LEGITIMATE_DEATH_WINDOWS.remove(id);
+                LAST_SAFE_HEALTH.put(id, Math.max(1.0F, healthAfterHit));
             }
             return;
         }
@@ -256,14 +286,13 @@ public final class CastroSafioBossBalance {
         float postArmorBoost;
 
         if (attackerTier == Tier.BOSS) {
-            // Slightly stronger than V3: more pressure, still no one-shot.
-            floorPct = original >= 30F ? 0.21F : original >= 15F ? 0.14F : original >= 4F ? 0.085F : 0.035F;
-            capPct = 0.32F;
-            postArmorBoost = 1.22F;
+            floorPct = original >= 30F ? 0.23F : original >= 15F ? 0.155F : original >= 4F ? 0.095F : 0.04F;
+            capPct = 0.34F;
+            postArmorBoost = 1.28F;
         } else {
-            floorPct = original >= 30F ? 0.145F : original >= 15F ? 0.095F : original >= 4F ? 0.055F : 0.025F;
-            capPct = 0.24F;
-            postArmorBoost = 1.12F;
+            floorPct = original >= 30F ? 0.15F : original >= 15F ? 0.10F : original >= 4F ? 0.06F : 0.025F;
+            capPct = 0.25F;
+            postArmorBoost = 1.15F;
         }
 
         if (attacker.getMaxHealth() > 0F && attacker.getHealth() / attacker.getMaxHealth() <= 0.30F) {
@@ -292,7 +321,6 @@ public final class CastroSafioBossBalance {
         }
 
         String damageId = event.getSource().getMsgId().toLowerCase();
-        // Keep OP/admin control intact. /kill should always work.
         if (damageId.equals("generickill") || damageId.equals("generic_kill")) {
             clearDeathTracking(target);
             return;
@@ -305,13 +333,11 @@ public final class CastroSafioBossBalance {
             return;
         }
 
-        // No legitimate lethal damage was recorded. This is the important fallback for
-        // execute effects implemented as direct kill()/setHealth(0), including "below 25% = die".
         event.setCanceled(true);
-        float restore = LAST_SAFE_HEALTH.getOrDefault(
-                target.getUUID(),
-                Math.max(1.0F, target.getMaxHealth() * 0.05F)
-        );
+        float floor = target.getMaxHealth() * EXECUTE_SAFE_FRACTION;
+        float restore = FINAL_PHASE_VIRTUAL_HP.containsKey(target.getUUID())
+                ? floor
+                : LAST_SAFE_HEALTH.getOrDefault(target.getUUID(), Math.max(1.0F, floor));
         target.setHealth(Mth.clamp(restore, 1.0F, target.getMaxHealth()));
         LEGITIMATE_DEATH_WINDOWS.remove(target.getUUID());
     }
@@ -399,7 +425,6 @@ public final class CastroSafioBossBalance {
 
     private static boolean isApothicSpecial(LivingEntity entity) {
         CompoundTag data = entity.getPersistentData();
-
         if (data.contains("apoth.boss") || data.contains("apoth.miniboss")) {
             return true;
         }
@@ -438,7 +463,7 @@ public final class CastroSafioBossBalance {
         if (damage != null && damage.getModifier(BOSS_DAMAGE_MOD) == null) {
             damage.addTransientModifier(new AttributeModifier(
                     BOSS_DAMAGE_MOD,
-                    tier == Tier.BOSS ? 0.35D : 0.15D,
+                    tier == Tier.BOSS ? 0.45D : 0.20D,
                     AttributeModifier.Operation.ADD_MULTIPLIED_BASE
             ));
         }
@@ -461,10 +486,20 @@ public final class CastroSafioBossBalance {
         }
     }
 
+    private static void maintainExecuteShieldFloor(LivingEntity living) {
+        if (!FINAL_PHASE_VIRTUAL_HP.containsKey(living.getUUID())) {
+            return;
+        }
+
+        float floor = living.getMaxHealth() * EXECUTE_SAFE_FRACTION;
+        if (living.getHealth() < floor) {
+            living.setHealth(floor);
+        }
+        LAST_SAFE_HEALTH.put(living.getUUID(), floor);
+    }
+
     private static void removeOurModifiers(LivingEntity living) {
-        SPAWN_HEALTH_GUARDS.remove(living.getUUID());
-        LEGITIMATE_DEATH_WINDOWS.remove(living.getUUID());
-        LAST_SAFE_HEALTH.remove(living.getUUID());
+        clearDeathTracking(living);
 
         AttributeInstance health = living.getAttribute(Attributes.MAX_HEALTH);
         if (health != null && health.getModifier(BOSS_HEALTH_MOD) != null) {
@@ -484,6 +519,7 @@ public final class CastroSafioBossBalance {
         LEGITIMATE_DEATH_WINDOWS.remove(living.getUUID());
         LAST_SAFE_HEALTH.remove(living.getUUID());
         SPAWN_HEALTH_GUARDS.remove(living.getUUID());
+        FINAL_PHASE_VIRTUAL_HP.remove(living.getUUID());
     }
 
     private static double healthMultiplier(float oldMax, Tier tier) {
