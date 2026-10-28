@@ -37,14 +37,15 @@ public final class CastroSafioBossBalance {
     private static final ResourceLocation BOSS_HEALTH_MOD = ResourceLocation.fromNamespaceAndPath(MOD_ID, "boss_health");
     private static final ResourceLocation BOSS_DAMAGE_MOD = ResourceLocation.fromNamespaceAndPath(MOD_ID, "boss_damage");
 
-    private static final float EXECUTE_SAFE_FRACTION = 0.27F;
-
     private static final Map<UUID, Tier> TIERS = new ConcurrentHashMap<>();
     private static final Map<UUID, HealDebuff> HEAL_DEBUFFS = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> SPAWN_HEALTH_GUARDS = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> LEGITIMATE_DEATH_WINDOWS = new ConcurrentHashMap<>();
     private static final Map<UUID, Float> LAST_SAFE_HEALTH = new ConcurrentHashMap<>();
-    private static final Map<UUID, Float> FINAL_PHASE_VIRTUAL_HP = new ConcurrentHashMap<>();
+
+    private static final Set<String> DIRECT_REMOVAL_GUARD = Set.of(
+            "block_factorys_bosses:yeti"
+    );
 
     private static final Set<String> EXPLICIT_BOSSES = Set.of(
             "minecraft:ender_dragon",
@@ -160,7 +161,6 @@ public final class CastroSafioBossBalance {
 
         applyBalanceModifiers(living, tier);
         maintainInitialFullHealth(living);
-        maintainExecuteShieldFloor(living);
 
         if (living.getHealth() > 0.0F) {
             LAST_SAFE_HEALTH.put(living.getUUID(), living.getHealth());
@@ -223,39 +223,12 @@ public final class CastroSafioBossBalance {
             float cap = maxHealth * (targetTier == Tier.BOSS ? 0.04F : 0.07F);
             float mitigated = currentDamage * (targetTier == Tier.BOSS ? 0.60F : 0.78F);
             float finalDamage = Math.min(mitigated, cap);
+            event.setNewDamage(finalDamage);
 
             UUID id = target.getUUID();
-            Float virtualHp = FINAL_PHASE_VIRTUAL_HP.get(id);
-            float executeFloor = maxHealth * EXECUTE_SAFE_FRACTION;
+            float healthAfterHit = target.getHealth() - finalDamage;
             long now = target.level().getGameTime();
 
-            if (virtualHp != null) {
-                if (finalDamage >= virtualHp - 0.0001F) {
-                    FINAL_PHASE_VIRTUAL_HP.remove(id);
-                    LEGITIMATE_DEATH_WINDOWS.put(id, now + 2L);
-                    event.setNewDamage(target.getHealth() + 1.0F);
-                    return;
-                }
-
-                FINAL_PHASE_VIRTUAL_HP.put(id, virtualHp - finalDamage);
-                if (target.getHealth() < executeFloor) {
-                    target.setHealth(executeFloor);
-                }
-                LAST_SAFE_HEALTH.put(id, executeFloor);
-                event.setNewDamage(0.0F);
-                return;
-            }
-
-            float healthAfterHit = target.getHealth() - finalDamage;
-            if (targetTier == Tier.BOSS && healthAfterHit > 0.0001F && healthAfterHit <= executeFloor) {
-                FINAL_PHASE_VIRTUAL_HP.put(id, healthAfterHit);
-                float allowedVisibleDamage = Math.max(0.0F, target.getHealth() - executeFloor);
-                event.setNewDamage(allowedVisibleDamage);
-                LAST_SAFE_HEALTH.put(id, executeFloor);
-                return;
-            }
-
-            event.setNewDamage(finalDamage);
             if (healthAfterHit <= 0.0001F) {
                 LEGITIMATE_DEATH_WINDOWS.put(id, now + 2L);
             } else {
@@ -334,10 +307,10 @@ public final class CastroSafioBossBalance {
         }
 
         event.setCanceled(true);
-        float floor = target.getMaxHealth() * EXECUTE_SAFE_FRACTION;
-        float restore = FINAL_PHASE_VIRTUAL_HP.containsKey(target.getUUID())
-                ? floor
-                : LAST_SAFE_HEALTH.getOrDefault(target.getUUID(), Math.max(1.0F, floor));
+        float restore = LAST_SAFE_HEALTH.getOrDefault(
+                target.getUUID(),
+                Math.max(1.0F, target.getMaxHealth() * 0.05F)
+        );
         target.setHealth(Mth.clamp(restore, 1.0F, target.getMaxHealth()));
         LEGITIMATE_DEATH_WINDOWS.remove(target.getUUID());
     }
@@ -359,6 +332,45 @@ public final class CastroSafioBossBalance {
         }
 
         event.setAmount(event.getAmount() * debuff.factor());
+    }
+
+    public static boolean shouldBlockDirectRemoval(Entity entity, Entity.RemovalReason reason) {
+        if (!(entity instanceof LivingEntity living) || living.level().isClientSide() || living instanceof Player) {
+            return false;
+        }
+
+        if (reason != Entity.RemovalReason.KILLED && reason != Entity.RemovalReason.DISCARDED) {
+            return false;
+        }
+
+        String id = BuiltInRegistries.ENTITY_TYPE.getKey(living.getType()).toString();
+        if (!DIRECT_REMOVAL_GUARD.contains(id)) {
+            return false;
+        }
+
+        if (getTierForDeath(living) == Tier.NONE) {
+            return false;
+        }
+
+        long now = living.level().getGameTime();
+        Long allowedUntil = LEGITIMATE_DEATH_WINDOWS.get(living.getUUID());
+        if (allowedUntil != null && now <= allowedUntil) {
+            clearDeathTracking(living);
+            return false;
+        }
+
+        // Bosses'Rise Yeti can be removed directly by execute-style mechanics, bypassing
+        // LivingDeathEvent. If no legitimate lethal damage was processed, keep the entity.
+        // This preserves the real health bar: 24% -> 18% -> 10% -> 0 normally.
+        if (living.getHealth() <= 0.0F) {
+            float restore = LAST_SAFE_HEALTH.getOrDefault(
+                    living.getUUID(),
+                    Math.max(1.0F, living.getMaxHealth() * 0.05F)
+            );
+            living.setHealth(Mth.clamp(restore, 1.0F, living.getMaxHealth()));
+        }
+
+        return true;
     }
 
     private static Tier getTier(LivingEntity living) {
@@ -486,18 +498,6 @@ public final class CastroSafioBossBalance {
         }
     }
 
-    private static void maintainExecuteShieldFloor(LivingEntity living) {
-        if (!FINAL_PHASE_VIRTUAL_HP.containsKey(living.getUUID())) {
-            return;
-        }
-
-        float floor = living.getMaxHealth() * EXECUTE_SAFE_FRACTION;
-        if (living.getHealth() < floor) {
-            living.setHealth(floor);
-        }
-        LAST_SAFE_HEALTH.put(living.getUUID(), floor);
-    }
-
     private static void removeOurModifiers(LivingEntity living) {
         clearDeathTracking(living);
 
@@ -519,7 +519,6 @@ public final class CastroSafioBossBalance {
         LEGITIMATE_DEATH_WINDOWS.remove(living.getUUID());
         LAST_SAFE_HEALTH.remove(living.getUUID());
         SPAWN_HEALTH_GUARDS.remove(living.getUUID());
-        FINAL_PHASE_VIRTUAL_HP.remove(living.getUUID());
     }
 
     private static double healthMultiplier(float oldMax, Tier tier) {
