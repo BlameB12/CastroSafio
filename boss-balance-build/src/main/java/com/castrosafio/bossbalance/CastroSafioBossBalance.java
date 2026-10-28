@@ -4,19 +4,20 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.util.Mth;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingHealEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
@@ -39,6 +40,8 @@ public final class CastroSafioBossBalance {
     private static final Map<UUID, Tier> TIERS = new ConcurrentHashMap<>();
     private static final Map<UUID, HealDebuff> HEAL_DEBUFFS = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> SPAWN_HEALTH_GUARDS = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> LEGITIMATE_DEATH_WINDOWS = new ConcurrentHashMap<>();
+    private static final Map<UUID, Float> LAST_SAFE_HEALTH = new ConcurrentHashMap<>();
 
     private static final Set<String> EXPLICIT_BOSSES = Set.of(
             "minecraft:ender_dragon",
@@ -140,11 +143,11 @@ public final class CastroSafioBossBalance {
         String id = BuiltInRegistries.ENTITY_TYPE.getKey(living.getType()).toString();
         boolean explicitEncounter = EXPLICIT_BOSSES.contains(id) || EXPLICIT_MINIBOSSES.contains(id);
 
-        // Explicit native bosses always win. This prevents generic Apotheosis/Apothic metadata
-        // attached to normal entities from accidentally removing our balance modifier.
         if (!explicitEncounter && isApothicSpecial(living)) {
             TIERS.remove(living.getUUID());
             SPAWN_HEALTH_GUARDS.remove(living.getUUID());
+            LEGITIMATE_DEATH_WINDOWS.remove(living.getUUID());
+            LAST_SAFE_HEALTH.remove(living.getUUID());
             removeOurModifiers(living);
             return;
         }
@@ -156,6 +159,15 @@ public final class CastroSafioBossBalance {
 
         applyBalanceModifiers(living, tier);
         maintainInitialFullHealth(living);
+
+        if (living.getHealth() > 0.0F) {
+            LAST_SAFE_HEALTH.put(living.getUUID(), living.getHealth());
+        }
+
+        Long deathWindow = LEGITIMATE_DEATH_WINDOWS.get(living.getUUID());
+        if (deathWindow != null && living.level().getGameTime() > deathWindow) {
+            LEGITIMATE_DEATH_WINDOWS.remove(living.getUUID());
+        }
 
         if (living.getTicksFrozen() > 0) {
             living.setTicksFrozen(0);
@@ -208,7 +220,18 @@ public final class CastroSafioBossBalance {
             float maxHealth = target.getMaxHealth();
             float cap = maxHealth * (targetTier == Tier.BOSS ? 0.04F : 0.07F);
             float mitigated = currentDamage * (targetTier == Tier.BOSS ? 0.60F : 0.78F);
-            event.setNewDamage(Math.min(mitigated, cap));
+            float finalDamage = Math.min(mitigated, cap);
+            event.setNewDamage(finalDamage);
+
+            float healthAfterHit = target.getHealth() - finalDamage;
+            long now = target.level().getGameTime();
+            if (healthAfterHit <= 0.0001F) {
+                // Only a real, processed lethal hit is allowed to kill a protected encounter.
+                LEGITIMATE_DEATH_WINDOWS.put(target.getUUID(), now + 2L);
+            } else {
+                LEGITIMATE_DEATH_WINDOWS.remove(target.getUUID());
+                LAST_SAFE_HEALTH.put(target.getUUID(), Math.max(1.0F, healthAfterHit));
+            }
             return;
         }
 
@@ -233,13 +256,14 @@ public final class CastroSafioBossBalance {
         float postArmorBoost;
 
         if (attackerTier == Tier.BOSS) {
-            floorPct = original >= 30F ? 0.20F : original >= 15F ? 0.13F : original >= 4F ? 0.075F : 0.03F;
+            // Slightly stronger than V3: more pressure, still no one-shot.
+            floorPct = original >= 30F ? 0.21F : original >= 15F ? 0.14F : original >= 4F ? 0.085F : 0.035F;
             capPct = 0.32F;
-            postArmorBoost = 1.15F;
+            postArmorBoost = 1.22F;
         } else {
-            floorPct = original >= 30F ? 0.14F : original >= 15F ? 0.09F : original >= 4F ? 0.05F : 0.02F;
+            floorPct = original >= 30F ? 0.145F : original >= 15F ? 0.095F : original >= 4F ? 0.055F : 0.025F;
             capPct = 0.24F;
-            postArmorBoost = 1.08F;
+            postArmorBoost = 1.12F;
         }
 
         if (attacker.getMaxHealth() > 0F && attacker.getHealth() / attacker.getMaxHealth() <= 0.30F) {
@@ -257,6 +281,39 @@ public final class CastroSafioBossBalance {
         } else {
             HEAL_DEBUFFS.put(player.getUUID(), new HealDebuff(now + 80L, 0.75F));
         }
+    }
+
+    @SubscribeEvent
+    public void onProtectedDeath(LivingDeathEvent event) {
+        LivingEntity target = event.getEntity();
+        Tier tier = getTierForDeath(target);
+        if (tier == Tier.NONE) {
+            return;
+        }
+
+        String damageId = event.getSource().getMsgId().toLowerCase();
+        // Keep OP/admin control intact. /kill should always work.
+        if (damageId.equals("generickill") || damageId.equals("generic_kill")) {
+            clearDeathTracking(target);
+            return;
+        }
+
+        long now = target.level().getGameTime();
+        Long allowedUntil = LEGITIMATE_DEATH_WINDOWS.get(target.getUUID());
+        if (allowedUntil != null && now <= allowedUntil) {
+            clearDeathTracking(target);
+            return;
+        }
+
+        // No legitimate lethal damage was recorded. This is the important fallback for
+        // execute effects implemented as direct kill()/setHealth(0), including "below 25% = die".
+        event.setCanceled(true);
+        float restore = LAST_SAFE_HEALTH.getOrDefault(
+                target.getUUID(),
+                Math.max(1.0F, target.getMaxHealth() * 0.05F)
+        );
+        target.setHealth(Mth.clamp(restore, 1.0F, target.getMaxHealth()));
+        LEGITIMATE_DEATH_WINDOWS.remove(target.getUUID());
     }
 
     @SubscribeEvent
@@ -285,8 +342,6 @@ public final class CastroSafioBossBalance {
 
         String id = BuiltInRegistries.ENTITY_TYPE.getKey(living.getType()).toString();
 
-        // Native encounters explicitly selected for CastroSafio are always balanced, even if
-        // another mod attaches generic compatibility metadata to them later in the tick.
         if (EXPLICIT_BOSSES.contains(id)) {
             TIERS.put(living.getUUID(), Tier.BOSS);
             return Tier.BOSS;
@@ -325,12 +380,26 @@ public final class CastroSafioBossBalance {
         return tier;
     }
 
+    private static Tier getTierForDeath(LivingEntity living) {
+        if (living instanceof Player) {
+            return Tier.NONE;
+        }
+
+        String id = BuiltInRegistries.ENTITY_TYPE.getKey(living.getType()).toString();
+        if (EXPLICIT_BOSSES.contains(id)) {
+            return Tier.BOSS;
+        }
+        if (EXPLICIT_MINIBOSSES.contains(id)) {
+            return Tier.MINIBOSS;
+        }
+
+        Tier cached = TIERS.get(living.getUUID());
+        return cached == null ? Tier.NONE : cached;
+    }
+
     private static boolean isApothicSpecial(LivingEntity entity) {
         CompoundTag data = entity.getPersistentData();
 
-        // Apotheosis 1.21.x uses these concrete persistent-data keys for Invaders/Elites.
-        // Do NOT use broad "contains apothic/apotheosis" matching: generic compatibility data
-        // may be attached to ordinary mobs and native bosses, which caused Frostmaw's buff to vanish.
         if (data.contains("apoth.boss") || data.contains("apoth.miniboss")) {
             return true;
         }
@@ -360,6 +429,7 @@ public final class CastroSafioBossBalance {
 
             if (wasFull) {
                 living.setHealth(living.getMaxHealth());
+                LAST_SAFE_HEALTH.put(living.getUUID(), living.getMaxHealth());
                 SPAWN_HEALTH_GUARDS.put(living.getUUID(), living.level().getGameTime() + 100L);
             }
         }
@@ -368,7 +438,7 @@ public final class CastroSafioBossBalance {
         if (damage != null && damage.getModifier(BOSS_DAMAGE_MOD) == null) {
             damage.addTransientModifier(new AttributeModifier(
                     BOSS_DAMAGE_MOD,
-                    tier == Tier.BOSS ? 0.25D : 0.12D,
+                    tier == Tier.BOSS ? 0.35D : 0.15D,
                     AttributeModifier.Operation.ADD_MULTIPLIED_BASE
             ));
         }
@@ -387,11 +457,14 @@ public final class CastroSafioBossBalance {
 
         if (living.getHealth() < living.getMaxHealth() - 0.5F) {
             living.setHealth(living.getMaxHealth());
+            LAST_SAFE_HEALTH.put(living.getUUID(), living.getMaxHealth());
         }
     }
 
     private static void removeOurModifiers(LivingEntity living) {
         SPAWN_HEALTH_GUARDS.remove(living.getUUID());
+        LEGITIMATE_DEATH_WINDOWS.remove(living.getUUID());
+        LAST_SAFE_HEALTH.remove(living.getUUID());
 
         AttributeInstance health = living.getAttribute(Attributes.MAX_HEALTH);
         if (health != null && health.getModifier(BOSS_HEALTH_MOD) != null) {
@@ -405,6 +478,12 @@ public final class CastroSafioBossBalance {
         if (damage != null && damage.getModifier(BOSS_DAMAGE_MOD) != null) {
             damage.removeModifier(BOSS_DAMAGE_MOD);
         }
+    }
+
+    private static void clearDeathTracking(LivingEntity living) {
+        LEGITIMATE_DEATH_WINDOWS.remove(living.getUUID());
+        LAST_SAFE_HEALTH.remove(living.getUUID());
+        SPAWN_HEALTH_GUARDS.remove(living.getUUID());
     }
 
     private static double healthMultiplier(float oldMax, Tier tier) {
