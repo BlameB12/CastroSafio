@@ -1,0 +1,226 @@
+=== Relevant classes ===
+warriorsofworldcaballeros/ClaymoreRender.class
+warriorsofworldcaballeros/EspadaOscuraRender.class
+warriorsofworldcaballeros/RenderizadoArmas.class
+warriorsofworldcaballeros/client/renderer/ArmaduraCaballeroAstadoArmorRenderer.class
+warriorsofworldcaballeros/client/renderer/ArmaduraCaballeroDoradoArmorRenderer.class
+warriorsofworldcaballeros/client/renderer/ArmaduraCaballeroOscuroArmorRenderer.class
+warriorsofworldcaballeros/client/renderer/ArmaduraCaballeroTemplarioArmorRenderer.class
+warriorsofworldcaballeros/client/renderer/ArmaduraCaballeroTemplarioAzulArmorRenderer.class
+warriorsofworldcaballeros/client/renderer/ArmaduraCaballeroTemplarioCentinelaArmorRenderer.class
+warriorsofworldcaballeros/client/renderer/ArmaduraCaballeroTemplarioNegroArmorRenderer.class
+warriorsofworldcaballeros/client/renderer/ArmaduraCaballeroTemplarioNegroYDoradoArmorRenderer.class
+warriorsofworldcaballeros/item/renderer/ClaymoreItemRenderer.class
+warriorsofworldcaballeros/item/renderer/EspadaOscuraItemRenderer.class
+warriorsofworldcaballeros/item/renderer/FundaClaymoreItemRenderer.class
+warriorsofworldcaballeros/item/renderer/FundaEspadaOscuraItemRenderer.class
+warriorsofworldcaballeros/item/renderer/GranHachaDoradaItemRenderer.class
+warriorsofworldcaballeros/item/renderer/GranMartilloItemRenderer.class
+warriorsofworldcaballeros/item/renderer/ZweihanderDeHierroItemRenderer.class
+
+=== EspadaOscuraRender ===
+Compiled from "EspadaOscuraRender.java"
+public class warriorsofworldcaballeros.EspadaOscuraRender extends yesman.epicfight.client.renderer.patched.item.RenderItemBase {
+  private final net.minecraft.world.item.ItemStack sheathStack;
+    descriptor: Lnet/minecraft/world/item/ItemStack;
+
+  public warriorsofworldcaballeros.EspadaOscuraRender();
+    descriptor: ()V
+    Code:
+       0: aload_0
+       1: invokespecial #15                 // Method yesman/epicfight/client/renderer/patched/item/RenderItemBase."<init>":()V
+       4: aload_0
+       5: new           #17                 // class net/minecraft/world/item/ItemStack
+       8: dup
+       9: getstatic     #23                 // Field warriorsofworldcaballeros/init/WarriorsOfWorldCaballerosModItems.FUNDA_ESPADA_OSCURA:Lnet/minecraftforge/registries/RegistryObject;
+      12: invokevirtual #29                 // Method net/minecraftforge/registries/RegistryObject.get:()Ljava/lang/Object;
+      15: checkcast     #31                 // class net/minecraft/world/level/ItemLike
+      18: invokespecial #34                 // Method net/minecraft/world/item/ItemStack."<init>":(Lnet/minecraft/world/level/ItemLike;)V
+      21: putfield      #36                 // Field sheathStack:Lnet/minecraft/world/item/ItemStack;
+      24: return
+
+  public void renderItemInHand(net.minecraft.world.item.ItemStack, yesman.epicfight.world.capabilities.entitypatch.LivingEntityPatch<?>, net.minecraft.world.InteractionHand, yesman.epicfight.model.armature.HumanoidArmature, yesman.epicfight.api.utils.math.OpenMatrix4f[], net.minecraft.client.renderer.MultiBufferSource, com.mojang.blaze3d.vertex.PoseStack, int, float);
+    descriptor: (Lnet/minecraft/world/item/ItemStack;Lyesman/epicfight/world/capabilities/entitypatch/LivingEntityPatch;Lnet/minecraft/world/InteractionHand;Lyesman/epicfight/model/armature/HumanoidArmature;[Lyesman/epicfight/api/utils/math/OpenMatrix4f;Lnet/minecraft/client/renderer/MultiBufferSource;Lcom/mojang/blaze3d/vertex/PoseStack;IF)V
+    Code:
+       0: new           #43                 // class yesman/epicfight/api/utils/math/OpenMatrix4f
+       3: dup
+       4: aload_0
+       5: getfield      #47                 // Field mainhandcorrectionMatrix:Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+       8: invokespecial #50                 // Method yesman/epicfight/api/utils/math/OpenMatrix4f."<init>":(Lyesman/epicfight/api/utils/math/OpenMatrix4f;)V
+      11: astore        10
+      13: aload         10
+      15: ldc           #51                 // float 0.5f
+      17: ldc           #52                 // float -0.34f
+      19: ldc           #53                 // float 0.9f
+      21: invokevirtual #57                 // Method yesman/epicfight/api/utils/math/OpenMatrix4f.translate:(FFF)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+      24: pop
+      25: aload         10
+      27: ldc           #58                 // float 4.8f
+      29: new           #60                 // class yesman/epicfight/api/utils/math/Vec3f
+      32: dup
+      33: fconst_0
+      34: fconst_0
+      35: fconst_1
+      36: invokespecial #63                 // Method yesman/epicfight/api/utils/math/Vec3f."<init>":(FFF)V
+      39: invokevirtual #67                 // Method yesman/epicfight/api/utils/math/OpenMatrix4f.rotate:(FLyesman/epicfight/api/utils/math/Vec3f;)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+      42: pop
+      43: aload         10
+      45: ldc           #68                 // float -2.3f
+      47: new           #60                 // class yesman/epicfight/api/utils/math/Vec3f
+      50: dup
+      51: fconst_1
+      52: fconst_0
+      53: fconst_0
+      54: invokespecial #63                 // Method yesman/epicfight/api/utils/math/Vec3f."<init>":(FFF)V
+      57: invokevirtual #67                 // Method yesman/epicfight/api/utils/math/OpenMatrix4f.rotate:(FLyesman/epicfight/api/utils/math/Vec3f;)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+      60: pop
+      61: aload         10
+      63: aload         5
+      65: aload         4
+      67: getfield      #74                 // Field yesman/epicfight/model/armature/HumanoidArmature.chest:Lyesman/epicfight/api/animation/Joint;
+      70: invokevirtual #80                 // Method yesman/epicfight/api/animation/Joint.getId:()I
+      73: aaload
+      74: invokevirtual #84                 // Method yesman/epicfight/api/utils/math/OpenMatrix4f.mulFront:(Lyesman/epicfight/api/utils/math/OpenMatrix4f;)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+      77: pop
+      78: aload_2
+      79: invokevirtual #90                 // Method yesman/epicfight/world/capabilities/entitypatch/LivingEntityPatch.getAnimator:()Lyesman/epicfight/api/animation/Animator;
+      82: aconst_null
+      83: checkcast     #92                 // class yesman/epicfight/api/animation/types/DynamicAnimation
+      86: invokevirtual #98                 // Method yesman/epicfight/api/animation/Animator.getPlayerFor:(Lyesman/epicfight/api/animation/types/DynamicAnimation;)Lyesman/epicfight/api/animation/AnimationPlayer;
+      89: invokevirtual #104                // Method yesman/epicfight/api/animation/AnimationPlayer.getAnimation:()Lyesman/epicfight/api/animation/types/DynamicAnimation;
+      92: astore        11
+      94: aload         11
+      96: getstatic     #110                // Field yesman/epicfight/gameasset/Animations.BIPED_RUN:Lyesman/epicfight/api/animation/types/StaticAnimation;
+      99: invokevirtual #116                // Method java/lang/Object.equals:(Ljava/lang/Object;)Z
+     102: ifne          145
+     105: aload         7
+     107: invokevirtual #121                // Method com/mojang/blaze3d/vertex/PoseStack.m_85836_:()V
+     110: new           #43                 // class yesman/epicfight/api/utils/math/OpenMatrix4f
+     113: dup
+     114: aload_0
+     115: getfield      #47                 // Field mainhandcorrectionMatrix:Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     118: invokespecial #50                 // Method yesman/epicfight/api/utils/math/OpenMatrix4f."<init>":(Lyesman/epicfight/api/utils/math/OpenMatrix4f;)V
+     121: astore        10
+     123: aload         10
+     125: aload         5
+     127: aload         4
+     129: getfield      #124                // Field yesman/epicfight/model/armature/HumanoidArmature.toolR:Lyesman/epicfight/api/animation/Joint;
+     132: invokevirtual #80                 // Method yesman/epicfight/api/animation/Joint.getId:()I
+     135: aaload
+     136: invokevirtual #84                 // Method yesman/epicfight/api/utils/math/OpenMatrix4f.mulFront:(Lyesman/epicfight/api/utils/math/OpenMatrix4f;)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     139: pop
+     140: aload         7
+     142: invokevirtual #127                // Method com/mojang/blaze3d/vertex/PoseStack.m_85849_:()V
+     145: aload         7
+     147: invokevirtual #121                // Method com/mojang/blaze3d/vertex/PoseStack.m_85836_:()V
+     150: aload_0
+     151: aload         7
+     153: aload         10
+     155: invokevirtual #131                // Method mulPoseStack:(Lcom/mojang/blaze3d/vertex/PoseStack;Lyesman/epicfight/api/utils/math/OpenMatrix4f;)V
+     158: invokestatic  #137                // Method net/minecraft/client/Minecraft.m_91087_:()Lnet/minecraft/client/Minecraft;
+     161: invokevirtual #141                // Method net/minecraft/client/Minecraft.m_91291_:()Lnet/minecraft/client/renderer/entity/ItemRenderer;
+     164: aload_1
+     165: getstatic     #147                // Field net/minecraft/world/item/ItemDisplayContext.THIRD_PERSON_RIGHT_HAND:Lnet/minecraft/world/item/ItemDisplayContext;
+     168: iload         8
+     170: getstatic     #153                // Field net/minecraft/client/renderer/texture/OverlayTexture.f_118083_:I
+     173: aload         7
+     175: aload         6
+     177: aconst_null
+     178: iconst_0
+     179: invokevirtual #159                // Method net/minecraft/client/renderer/entity/ItemRenderer.m_269128_:(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemDisplayContext;IILcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/world/level/Level;I)V
+     182: aload         7
+     184: invokevirtual #127                // Method com/mojang/blaze3d/vertex/PoseStack.m_85849_:()V
+     187: new           #43                 // class yesman/epicfight/api/utils/math/OpenMatrix4f
+     190: dup
+     191: aload_0
+     192: getfield      #47                 // Field mainhandcorrectionMatrix:Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     195: invokespecial #50                 // Method yesman/epicfight/api/utils/math/OpenMatrix4f."<init>":(Lyesman/epicfight/api/utils/math/OpenMatrix4f;)V
+     198: astore        10
+     200: aload         10
+     202: ldc           #51                 // float 0.5f
+     204: ldc           #52                 // float -0.34f
+     206: ldc           #53                 // float 0.9f
+     208: invokevirtual #57                 // Method yesman/epicfight/api/utils/math/OpenMatrix4f.translate:(FFF)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     211: pop
+     212: aload         10
+     214: ldc           #58                 // float 4.8f
+     216: new           #60                 // class yesman/epicfight/api/utils/math/Vec3f
+     219: dup
+     220: fconst_0
+     221: fconst_0
+     222: fconst_1
+     223: invokespecial #63                 // Method yesman/epicfight/api/utils/math/Vec3f."<init>":(FFF)V
+     226: invokevirtual #67                 // Method yesman/epicfight/api/utils/math/OpenMatrix4f.rotate:(FLyesman/epicfight/api/utils/math/Vec3f;)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     229: pop
+     230: aload         10
+     232: ldc           #68                 // float -2.3f
+     234: new           #60                 // class yesman/epicfight/api/utils/math/Vec3f
+     237: dup
+     238: fconst_1
+     239: fconst_0
+     240: fconst_0
+     241: invokespecial #63                 // Method yesman/epicfight/api/utils/math/Vec3f."<init>":(FFF)V
+     244: invokevirtual #67                 // Method yesman/epicfight/api/utils/math/OpenMatrix4f.rotate:(FLyesman/epicfight/api/utils/math/Vec3f;)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     247: pop
+     248: aload         10
+     250: aload         5
+     252: aload         4
+     254: getfield      #74                 // Field yesman/epicfight/model/armature/HumanoidArmature.chest:Lyesman/epicfight/api/animation/Joint;
+     257: invokevirtual #80                 // Method yesman/epicfight/api/animation/Joint.getId:()I
+     260: aaload
+     261: invokevirtual #84                 // Method yesman/epicfight/api/utils/math/OpenMatrix4f.mulFront:(Lyesman/epicfight/api/utils/math/OpenMatrix4f;)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     264: pop
+     265: aload         7
+     267: invokevirtual #121                // Method com/mojang/blaze3d/vertex/PoseStack.m_85836_:()V
+     270: aload_0
+     271: aload         7
+     273: aload         10
+     275: invokevirtual #131                // Method mulPoseStack:(Lcom/mojang/blaze3d/vertex/PoseStack;Lyesman/epicfight/api/utils/math/OpenMatrix4f;)V
+     278: invokestatic  #137                // Method net/minecraft/client/Minecraft.m_91087_:()Lnet/minecraft/client/Minecraft;
+     281: invokevirtual #141                // Method net/minecraft/client/Minecraft.m_91291_:()Lnet/minecraft/client/renderer/entity/ItemRenderer;
+     284: aload_0
+     285: getfield      #36                 // Field sheathStack:Lnet/minecraft/world/item/ItemStack;
+     288: getstatic     #147                // Field net/minecraft/world/item/ItemDisplayContext.THIRD_PERSON_RIGHT_HAND:Lnet/minecraft/world/item/ItemDisplayContext;
+     291: iload         8
+     293: getstatic     #153                // Field net/minecraft/client/renderer/texture/OverlayTexture.f_118083_:I
+     296: aload         7
+     298: aload         6
+     300: aconst_null
+     301: iconst_0
+     302: invokevirtual #159                // Method net/minecraft/client/renderer/entity/ItemRenderer.m_269128_:(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemDisplayContext;IILcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/world/level/Level;I)V
+     305: aload         7
+     307: invokevirtual #127                // Method com/mojang/blaze3d/vertex/PoseStack.m_85849_:()V
+     310: return
+}
+
+=== RenderizadoArmas ===
+Compiled from "RenderizadoArmas.java"
+public class warriorsofworldcaballeros.RenderizadoArmas {
+  public warriorsofworldcaballeros.RenderizadoArmas();
+    descriptor: ()V
+    Code:
+       0: aload_0
+       1: invokespecial #31                 // Method java/lang/Object."<init>":()V
+       4: return
+
+  public static void registerRenderer(yesman.epicfight.api.client.forgeevent.PatchedRenderersEvent$Add);
+    descriptor: (Lyesman/epicfight/api/client/forgeevent/PatchedRenderersEvent$Add;)V
+    Code:
+       0: aload_0
+       1: getstatic     #42                 // Field warriorsofworldcaballeros/init/WarriorsOfWorldCaballerosModItems.ESPADA_OSCURA:Lnet/minecraftforge/registries/RegistryObject;
+       4: invokevirtual #48                 // Method net/minecraftforge/registries/RegistryObject.get:()Ljava/lang/Object;
+       7: checkcast     #50                 // class net/minecraft/world/item/Item
+      10: new           #52                 // class warriorsofworldcaballeros/EspadaOscuraRender
+      13: dup
+      14: invokespecial #53                 // Method warriorsofworldcaballeros/EspadaOscuraRender."<init>":()V
+      17: invokevirtual #57                 // Method yesman/epicfight/api/client/forgeevent/PatchedRenderersEvent$Add.addItemRenderer:(Lnet/minecraft/world/item/Item;Lyesman/epicfight/client/renderer/patched/item/RenderItemBase;)V
+      20: aload_0
+      21: getstatic     #60                 // Field warriorsofworldcaballeros/init/WarriorsOfWorldCaballerosModItems.CLAYMORE:Lnet/minecraftforge/registries/RegistryObject;
+      24: invokevirtual #48                 // Method net/minecraftforge/registries/RegistryObject.get:()Ljava/lang/Object;
+      27: checkcast     #50                 // class net/minecraft/world/item/Item
+      30: new           #62                 // class warriorsofworldcaballeros/ClaymoreRender
+      33: dup
+      34: invokespecial #63                 // Method warriorsofworldcaballeros/ClaymoreRender."<init>":()V
+      37: invokevirtual #57                 // Method yesman/epicfight/api/client/forgeevent/PatchedRenderersEvent$Add.addItemRenderer:(Lnet/minecraft/world/item/Item;Lyesman/epicfight/client/renderer/patched/item/RenderItemBase;)V
+      40: return
+}
