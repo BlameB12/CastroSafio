@@ -16,33 +16,55 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Download Warriors Of World Knights 1.0.2
+      - name: Download target jars
         run: |
           curl -fL --retry 3 -o /tmp/knights.jar 'https://edge.forgecdn.net/files/7004/921/warriors_of_world__caballeros-1.0.2-forge-1.20.1.jar'
+          curl -fsSL 'https://api.modrinth.com/v2/version/KEBfkBat' -o /tmp/ef-version.json
+          python - <<'PY'
+          import json, urllib.request
+          d=json.load(open('/tmp/ef-version.json'))
+          files=d['files']
+          primary=next((f for f in files if f.get('primary')), files[0])
+          urllib.request.urlretrieve(primary['url'], '/tmp/epicfight.jar')
+          print(primary['filename'], primary['url'])
+          PY
           test -s /tmp/knights.jar
+          test -s /tmp/epicfight.jar
           unzip -t /tmp/knights.jar
+          unzip -t /tmp/epicfight.jar
       - name: Inspect renderer bytecode
         run: |
           mkdir -p epic-fight-rpg/diagnostics
           OUT='epic-fight-rpg/diagnostics/wow-knights-javap.txt'
+          EF='epic-fight-rpg/diagnostics/epicfight-20.14.17-renderitembase-javap.txt'
           {
             echo '=== Relevant classes ==='
-            jar tf /tmp/knights.jar | grep -E 'EspadaOscuraRender|RenderizadoArmas|Render.*\.class' || true
+            jar tf /tmp/knights.jar | grep -E 'EspadaOscuraRender|ClaymoreRender|RenderizadoArmas|Render.*\.class' || true
             echo
             echo '=== EspadaOscuraRender ==='
             javap -classpath /tmp/knights.jar -c -p -s warriorsofworldcaballeros.EspadaOscuraRender || true
             echo
+            echo '=== ClaymoreRender ==='
+            javap -classpath /tmp/knights.jar -c -p -s warriorsofworldcaballeros.ClaymoreRender || true
+            echo
             echo '=== RenderizadoArmas ==='
             javap -classpath /tmp/knights.jar -c -p -s warriorsofworldcaballeros.RenderizadoArmas || true
           } > "$OUT" 2>&1
-          cat "$OUT"
+          {
+            echo '=== Epic Fight 20.14.17 RenderItemBase ==='
+            javap -classpath /tmp/epicfight.jar -c -p -s yesman.epicfight.client.renderer.patched.item.RenderItemBase || true
+            echo
+            echo '=== PatchedRenderersEvent.Add ==='
+            javap -classpath /tmp/epicfight.jar -c -p -s 'yesman.epicfight.api.client.forgeevent.PatchedRenderersEvent$Add' || true
+          } > "$EF" 2>&1
+          cat "$EF"
       - name: Commit diagnostics
         run: |
           git config user.name 'CastroSafio Diagnostics Bot'
           git config user.email 'actions@users.noreply.github.com'
-          git add epic-fight-rpg/diagnostics/wow-knights-javap.txt
+          git add epic-fight-rpg/diagnostics/*.txt
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m 'Inspect Warriors Of World Knights renderer bytecode'
+          git commit -m 'Inspect Warriors Of World and Epic Fight renderer APIs'
           git push
