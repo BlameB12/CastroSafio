@@ -1,0 +1,28 @@
+name: Inspect Warriors Of World Knights
+
+on:
+  push:
+    branches:
+      - epic-fight-rpg-optimized
+    paths:
+      - '.github/workflows/inspect-wow-knights.yml'
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Warriors Of World Knights 1.0.2
+        run: |
+          curl -fL --retry 3 -o /tmp/knights.jar 'https://edge.forgecdn.net/files/7004/921/warriors_of_world__caballeros-1.0.2-forge-1.20.1.jar'
+          test -s /tmp/knights.jar
+          unzip -t /tmp/knights.jar
+      - name: Inspect renderer bytecode
+        run: |
+          echo '=== Relevant classes ==='
+          jar tf /tmp/knights.jar | grep -E 'EspadaOscuraRender|RenderizadoArmas|Render.*\.class' || true
+          echo '=== EspadaOscuraRender ==='
+          javap -classpath /tmp/knights.jar -c -p warriorsofworldcaballeros.EspadaOscuraRender || true
+          echo '=== RenderizadoArmas ==='
+          javap -classpath /tmp/knights.jar -c -p warriorsofworldcaballeros.RenderizadoArmas || true
