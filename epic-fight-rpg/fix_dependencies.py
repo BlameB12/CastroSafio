@@ -6,9 +6,11 @@ manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
 
 # Keep Epic ACG itself. Instead of downgrading Epic Fight from 20.14.17,
 # add the current GPLv3 compatibility bridge tested against Epic Fight 20.14.17.
+# Relics is pinned to 0.8.0.13 because it is compatible with OctoLib 0.5.0.1,
+# while Relics 0.6.5.2 still references the removed OctoConfig class.
 REQUIRED_FIXES = [
     (1286233, 8021301, "Dungeons And Combat x Iron's Spells 1.5.4 (dacxirons)"),
-    (445274, 5435202, "Relics 0.6.5.2"),
+    (445274, 7708970, "Relics 0.8.0.13"),
     (474114, 8465155, "Huge Structure Blocks Forge 1.1.10"),
     (326652, 8889041, "Cupboard 4.2"),
     (1737786, 9206668, "Epic ACG Compatibility Fix 2.2.28 for Epic Fight 20.14.17"),
@@ -39,19 +41,18 @@ for project_id, _file_id, _name in REQUIRED_FIXES:
         seen.add(project_id)
 
 manifest['files'] = fixed_files
-manifest['version'] = '1.0.3-acg-20.14.17-compat'
-manifest['name'] = 'RPG EPIC FIGHT - FULL COMPAT + MAX OPT - FIX3 ACG'
+manifest['version'] = '1.0.4-relics-octolib-fix'
+manifest['name'] = 'RPG EPIC FIGHT - FULL COMPAT + MAX OPT - FIX4 ACG'
 manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
 
 notes_path = Path('build/pack/OPTIMIZATION_NOTES.txt')
 notes = notes_path.read_text(encoding='utf-8') if notes_path.exists() else ''
-notes += '\nFIX3 - EPIC ACG ON EPIC FIGHT 20.14.17:\n'
+notes += '\nFIX4 - RELICS / OCTOLIB COMPATIBILITY:\n'
 notes += '- KEPT: Epic ACG 20.12.5.0 original (project 665625, file 8430532).\n'
+notes += '- KEPT: Epic Fight 20.14.17 + Epic ACG Compatibility Fix 2.2.28.\n'
 for project_id, file_id, name in REQUIRED_FIXES:
-    notes += f'- ADDED: {name} (project {project_id}, file {file_id})\n'
-notes += '- Epic Fight remains 20.14.17. No downgrade.\n'
-notes += '- Epic ACG bridge is specifically published/tested for Epic Fight 20.14.17.\n'
-notes += '- This keeps the original Epic ACG content while supplying the compatibility layer for the newer Epic Fight API.\n'
+    notes += f'- PINNED/ADDED: {name} (project {project_id}, file {file_id})\n'
+notes += '- Relics upgraded from 0.6.5.2 to 0.8.0.13 to match OctoLib 0.5.0.1 and remove the missing OctoConfig crash.\n'
 notes_path.write_text(notes, encoding='utf-8')
 
 added_html = Path('build/pack/ADDED_MODS.html')
@@ -70,4 +71,4 @@ assert projects[1737786] == 9206668
 for project_id, file_id, _ in REQUIRED_FIXES:
     assert projects[project_id] == file_id
 
-print('FIX3 ACG compatibility applied. Final entries:', len(manifest['files']))
+print('FIX4 Relics/OctoLib compatibility applied. Final entries:', len(manifest['files']))
