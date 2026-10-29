@@ -1,0 +1,702 @@
+=== Epic Fight 20.14.17 RenderItemBase ===
+Compiled from "RenderItemBase.java"
+public class yesman.epicfight.client.renderer.patched.item.RenderItemBase {
+  protected static final java.util.Map<java.lang.String, yesman.epicfight.api.utils.math.OpenMatrix4f> GLOBAL_MAINHAND_ITEM_TRANSFORMS;
+    descriptor: Ljava/util/Map;
+
+  protected static final java.util.Map<java.lang.String, yesman.epicfight.api.utils.math.OpenMatrix4f> GLOBAL_OFFHAND_ITEM_TRANSFORMS;
+    descriptor: Ljava/util/Map;
+
+  protected static net.minecraft.client.renderer.entity.ItemRenderer itemRenderer;
+    descriptor: Lnet/minecraft/client/renderer/entity/ItemRenderer;
+
+  protected static net.minecraft.client.renderer.ItemInHandRenderer itemInHandRenderer;
+    descriptor: Lnet/minecraft/client/renderer/ItemInHandRenderer;
+
+  protected final java.util.Map<java.lang.String, yesman.epicfight.api.utils.math.OpenMatrix4f> mainhandCorrectionTransforms;
+    descriptor: Ljava/util/Map;
+
+  protected final java.util.Map<java.lang.String, yesman.epicfight.api.utils.math.OpenMatrix4f> offhandCorrectionTransforms;
+    descriptor: Ljava/util/Map;
+
+  private final yesman.epicfight.api.client.animation.property.TrailInfo trailInfo;
+    descriptor: Lyesman/epicfight/api/client/animation/property/TrailInfo;
+
+  private final boolean alwaysInHand;
+    descriptor: Z
+
+  private final boolean forceVanillaFirstPerson;
+    descriptor: Z
+
+  private final boolean appearedInAfterimage;
+    descriptor: Z
+
+  public final yesman.epicfight.api.utils.math.OpenMatrix4f transformHolder;
+    descriptor: Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+
+  public static void initItemRenderers(net.minecraft.client.Minecraft);
+    descriptor: (Lnet/minecraft/client/Minecraft;)V
+    Code:
+       0: getstatic     #39                 // Field itemRenderer:Lnet/minecraft/client/renderer/entity/ItemRenderer;
+       3: ifnonnull     12
+       6: getstatic     #41                 // Field itemInHandRenderer:Lnet/minecraft/client/renderer/ItemInHandRenderer;
+       9: ifnull        22
+      12: new           #43                 // class java/lang/IllegalStateException
+      15: dup
+      16: ldc           #45                 // String Already initialized item renderers
+      18: invokespecial #49                 // Method java/lang/IllegalStateException."<init>":(Ljava/lang/String;)V
+      21: athrow
+      22: aload_0
+      23: invokevirtual #55                 // Method net/minecraft/client/Minecraft.m_91291_:()Lnet/minecraft/client/renderer/entity/ItemRenderer;
+      26: putstatic     #39                 // Field itemRenderer:Lnet/minecraft/client/renderer/entity/ItemRenderer;
+      29: aload_0
+      30: getfield      #59                 // Field net/minecraft/client/Minecraft.f_91063_:Lnet/minecraft/client/renderer/GameRenderer;
+      33: getfield      #64                 // Field net/minecraft/client/renderer/GameRenderer.f_109055_:Lnet/minecraft/client/renderer/ItemInHandRenderer;
+      36: putstatic     #41                 // Field itemInHandRenderer:Lnet/minecraft/client/renderer/ItemInHandRenderer;
+      39: return
+
+  public yesman.epicfight.client.renderer.patched.item.RenderItemBase(com.google.gson.JsonElement);
+    descriptor: (Lcom/google/gson/JsonElement;)V
+    Code:
+       0: aload_0
+       1: invokespecial #70                 // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: new           #72                 // class yesman/epicfight/api/utils/math/OpenMatrix4f
+       8: dup
+       9: invokespecial #73                 // Method yesman/epicfight/api/utils/math/OpenMatrix4f."<init>":()V
+      12: putfield      #75                 // Field transformHolder:Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+      15: aload_1
+      16: invokevirtual #81                 // Method com/google/gson/JsonElement.getAsJsonObject:()Lcom/google/gson/JsonObject;
+      19: astore_2
+      20: aload_0
+      21: aload_2
+      22: ldc           #83                 // String trail
+      24: invokevirtual #89                 // Method com/google/gson/JsonObject.has:(Ljava/lang/String;)Z
+      27: ifeq          42
+      30: aload_2
+      31: ldc           #83                 // String trail
+      33: invokevirtual #93                 // Method com/google/gson/JsonObject.get:(Ljava/lang/String;)Lcom/google/gson/JsonElement;
+      36: invokestatic  #99                 // Method yesman/epicfight/api/client/animation/property/TrailInfo.deserialize:(Lcom/google/gson/JsonElement;)Lyesman/epicfight/api/client/animation/property/TrailInfo;
+      39: goto          43
+      42: aconst_null
+      43: putfield      #101                // Field trailInfo:Lyesman/epicfight/api/client/animation/property/TrailInfo;
+      46: aload_0
+      47: aload_2
+      48: ldc           #103                // String force_vanilla_first_person
+      50: invokevirtual #89                 // Method com/google/gson/JsonObject.has:(Ljava/lang/String;)Z
+      53: ifeq          69
+      56: aload_2
+      57: ldc           #103                // String force_vanilla_first_person
+      59: invokestatic  #109                // Method net/minecraft/util/GsonHelper.m_13912_:(Lcom/google/gson/JsonObject;Ljava/lang/String;)Z
+      62: ifeq          69
+      65: iconst_1
+      66: goto          70
+      69: iconst_0
+      70: putfield      #111                // Field forceVanillaFirstPerson:Z
+      73: aload_0
+      74: aload_2
+      75: ldc           #112                // String alwaysInHand
+      77: invokevirtual #89                 // Method com/google/gson/JsonObject.has:(Ljava/lang/String;)Z
+      80: ifeq          96
+      83: aload_2
+      84: ldc           #112                // String alwaysInHand
+      86: invokestatic  #109                // Method net/minecraft/util/GsonHelper.m_13912_:(Lcom/google/gson/JsonObject;Ljava/lang/String;)Z
+      89: ifeq          96
+      92: iconst_1
+      93: goto          97
+      96: iconst_0
+      97: putfield      #114                // Field alwaysInHand:Z
+     100: aload_0
+     101: aload_2
+     102: ldc           #116                // String appeared_in_afterimage
+     104: invokevirtual #89                 // Method com/google/gson/JsonObject.has:(Ljava/lang/String;)Z
+     107: ifeq          119
+     110: aload_2
+     111: ldc           #116                // String appeared_in_afterimage
+     113: invokestatic  #109                // Method net/minecraft/util/GsonHelper.m_13912_:(Lcom/google/gson/JsonObject;Ljava/lang/String;)Z
+     116: goto          120
+     119: iconst_1
+     120: putfield      #118                // Field appearedInAfterimage:Z
+     123: aload_2
+     124: ldc           #120                // String transforms
+     126: invokevirtual #89                 // Method com/google/gson/JsonObject.has:(Ljava/lang/String;)Z
+     129: ifne          149
+     132: aload_0
+     133: getstatic     #122                // Field GLOBAL_MAINHAND_ITEM_TRANSFORMS:Ljava/util/Map;
+     136: putfield      #124                // Field mainhandCorrectionTransforms:Ljava/util/Map;
+     139: aload_0
+     140: getstatic     #126                // Field GLOBAL_OFFHAND_ITEM_TRANSFORMS:Ljava/util/Map;
+     143: putfield      #128                // Field offhandCorrectionTransforms:Ljava/util/Map;
+     146: goto          775
+     149: aload_2
+     150: ldc           #120                // String transforms
+     152: invokevirtual #93                 // Method com/google/gson/JsonObject.get:(Ljava/lang/String;)Lcom/google/gson/JsonElement;
+     155: invokevirtual #81                 // Method com/google/gson/JsonElement.getAsJsonObject:()Lcom/google/gson/JsonObject;
+     158: astore_3
+     159: aload_3
+     160: ldc           #130                // String mainhand
+     162: invokevirtual #89                 // Method com/google/gson/JsonObject.has:(Ljava/lang/String;)Z
+     165: ifeq          460
+     168: invokestatic  #134                // Method com/google/common/collect/ImmutableMap.builder:()Lcom/google/common/collect/ImmutableMap$Builder;
+     171: astore        4
+     173: aload_3
+     174: ldc           #130                // String mainhand
+     176: invokevirtual #93                 // Method com/google/gson/JsonObject.get:(Ljava/lang/String;)Lcom/google/gson/JsonElement;
+     179: invokevirtual #81                 // Method com/google/gson/JsonElement.getAsJsonObject:()Lcom/google/gson/JsonObject;
+     182: invokevirtual #138                // Method com/google/gson/JsonObject.entrySet:()Ljava/util/Set;
+     185: invokeinterface #144,  1          // InterfaceMethod java/util/Set.iterator:()Ljava/util/Iterator;
+     190: astore        5
+     192: aload         5
+     194: invokeinterface #150,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     199: ifeq          448
+     202: aload         5
+     204: invokeinterface #154,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     209: checkcast     #14                 // class java/util/Map$Entry
+     212: astore        6
+     214: aload         6
+     216: invokeinterface #157,  1          // InterfaceMethod java/util/Map$Entry.getValue:()Ljava/lang/Object;
+     221: checkcast     #77                 // class com/google/gson/JsonElement
+     224: invokevirtual #81                 // Method com/google/gson/JsonElement.getAsJsonObject:()Lcom/google/gson/JsonObject;
+     227: astore        7
+     229: new           #72                 // class yesman/epicfight/api/utils/math/OpenMatrix4f
+     232: dup
+     233: invokespecial #73                 // Method yesman/epicfight/api/utils/math/OpenMatrix4f."<init>":()V
+     236: astore        8
+     238: aload         7
+     240: ldc           #159                // String translation
+     242: invokevirtual #89                 // Method com/google/gson/JsonObject.has:(Ljava/lang/String;)Z
+     245: ifeq          293
+     248: aload         7
+     250: ldc           #159                // String translation
+     252: invokevirtual #93                 // Method com/google/gson/JsonObject.get:(Ljava/lang/String;)Lcom/google/gson/JsonElement;
+     255: invokevirtual #163                // Method com/google/gson/JsonElement.getAsJsonArray:()Lcom/google/gson/JsonArray;
+     258: astore        9
+     260: aload         8
+     262: aload         9
+     264: iconst_0
+     265: invokevirtual #168                // Method com/google/gson/JsonArray.get:(I)Lcom/google/gson/JsonElement;
+     268: invokevirtual #172                // Method com/google/gson/JsonElement.getAsFloat:()F
+     271: aload         9
+     273: iconst_1
+     274: invokevirtual #168                // Method com/google/gson/JsonArray.get:(I)Lcom/google/gson/JsonElement;
+     277: invokevirtual #172                // Method com/google/gson/JsonElement.getAsFloat:()F
+     280: aload         9
+     282: iconst_2
+     283: invokevirtual #168                // Method com/google/gson/JsonArray.get:(I)Lcom/google/gson/JsonElement;
+     286: invokevirtual #172                // Method com/google/gson/JsonElement.getAsFloat:()F
+     289: invokevirtual #176                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.translate:(FFF)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     292: pop
+     293: aload         7
+     295: ldc           #178                // String rotation
+     297: invokevirtual #89                 // Method com/google/gson/JsonObject.has:(Ljava/lang/String;)Z
+     300: ifeq          369
+     303: aload         7
+     305: ldc           #178                // String rotation
+     307: invokevirtual #93                 // Method com/google/gson/JsonObject.get:(Ljava/lang/String;)Lcom/google/gson/JsonElement;
+     310: invokevirtual #163                // Method com/google/gson/JsonElement.getAsJsonArray:()Lcom/google/gson/JsonArray;
+     313: astore        9
+     315: aload         8
+     317: aload         9
+     319: iconst_2
+     320: invokevirtual #168                // Method com/google/gson/JsonArray.get:(I)Lcom/google/gson/JsonElement;
+     323: invokevirtual #172                // Method com/google/gson/JsonElement.getAsFloat:()F
+     326: getstatic     #184                // Field yesman/epicfight/api/utils/math/Vec3f.Z_AXIS:Lyesman/epicfight/api/utils/math/Vec3f;
+     329: invokevirtual #188                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.rotateDeg:(FLyesman/epicfight/api/utils/math/Vec3f;)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     332: pop
+     333: aload         8
+     335: aload         9
+     337: iconst_1
+     338: invokevirtual #168                // Method com/google/gson/JsonArray.get:(I)Lcom/google/gson/JsonElement;
+     341: invokevirtual #172                // Method com/google/gson/JsonElement.getAsFloat:()F
+     344: getstatic     #191                // Field yesman/epicfight/api/utils/math/Vec3f.Y_AXIS:Lyesman/epicfight/api/utils/math/Vec3f;
+     347: invokevirtual #188                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.rotateDeg:(FLyesman/epicfight/api/utils/math/Vec3f;)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     350: pop
+     351: aload         8
+     353: aload         9
+     355: iconst_0
+     356: invokevirtual #168                // Method com/google/gson/JsonArray.get:(I)Lcom/google/gson/JsonElement;
+     359: invokevirtual #172                // Method com/google/gson/JsonElement.getAsFloat:()F
+     362: getstatic     #194                // Field yesman/epicfight/api/utils/math/Vec3f.X_AXIS:Lyesman/epicfight/api/utils/math/Vec3f;
+     365: invokevirtual #188                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.rotateDeg:(FLyesman/epicfight/api/utils/math/Vec3f;)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     368: pop
+     369: aload         7
+     371: ldc           #196                // String scale
+     373: invokevirtual #89                 // Method com/google/gson/JsonObject.has:(Ljava/lang/String;)Z
+     376: ifeq          424
+     379: aload         7
+     381: ldc           #196                // String scale
+     383: invokevirtual #93                 // Method com/google/gson/JsonObject.get:(Ljava/lang/String;)Lcom/google/gson/JsonElement;
+     386: invokevirtual #163                // Method com/google/gson/JsonElement.getAsJsonArray:()Lcom/google/gson/JsonArray;
+     389: astore        9
+     391: aload         8
+     393: aload         9
+     395: iconst_0
+     396: invokevirtual #168                // Method com/google/gson/JsonArray.get:(I)Lcom/google/gson/JsonElement;
+     399: invokevirtual #172                // Method com/google/gson/JsonElement.getAsFloat:()F
+     402: aload         9
+     404: iconst_1
+     405: invokevirtual #168                // Method com/google/gson/JsonArray.get:(I)Lcom/google/gson/JsonElement;
+     408: invokevirtual #172                // Method com/google/gson/JsonElement.getAsFloat:()F
+     411: aload         9
+     413: iconst_2
+     414: invokevirtual #168                // Method com/google/gson/JsonArray.get:(I)Lcom/google/gson/JsonElement;
+     417: invokevirtual #172                // Method com/google/gson/JsonElement.getAsFloat:()F
+     420: invokevirtual #198                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.scale:(FFF)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     423: pop
+     424: aload         4
+     426: aload         6
+     428: invokeinterface #201,  1          // InterfaceMethod java/util/Map$Entry.getKey:()Ljava/lang/Object;
+     433: checkcast     #203                // class java/lang/String
+     436: aload         8
+     438: invokevirtual #207                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.unmodifiable:()Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     441: invokevirtual #211                // Method com/google/common/collect/ImmutableMap$Builder.put:(Ljava/lang/Object;Ljava/lang/Object;)Lcom/google/common/collect/ImmutableMap$Builder;
+     444: pop
+     445: goto          192
+     448: aload_0
+     449: aload         4
+     451: invokevirtual #215                // Method com/google/common/collect/ImmutableMap$Builder.build:()Lcom/google/common/collect/ImmutableMap;
+     454: putfield      #124                // Field mainhandCorrectionTransforms:Ljava/util/Map;
+     457: goto          467
+     460: aload_0
+     461: getstatic     #122                // Field GLOBAL_MAINHAND_ITEM_TRANSFORMS:Ljava/util/Map;
+     464: putfield      #124                // Field mainhandCorrectionTransforms:Ljava/util/Map;
+     467: aload_3
+     468: ldc           #217                // String offhand
+     470: invokevirtual #89                 // Method com/google/gson/JsonObject.has:(Ljava/lang/String;)Z
+     473: ifeq          768
+     476: invokestatic  #134                // Method com/google/common/collect/ImmutableMap.builder:()Lcom/google/common/collect/ImmutableMap$Builder;
+     479: astore        4
+     481: aload_3
+     482: ldc           #217                // String offhand
+     484: invokevirtual #93                 // Method com/google/gson/JsonObject.get:(Ljava/lang/String;)Lcom/google/gson/JsonElement;
+     487: invokevirtual #81                 // Method com/google/gson/JsonElement.getAsJsonObject:()Lcom/google/gson/JsonObject;
+     490: invokevirtual #138                // Method com/google/gson/JsonObject.entrySet:()Ljava/util/Set;
+     493: invokeinterface #144,  1          // InterfaceMethod java/util/Set.iterator:()Ljava/util/Iterator;
+     498: astore        5
+     500: aload         5
+     502: invokeinterface #150,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     507: ifeq          756
+     510: aload         5
+     512: invokeinterface #154,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     517: checkcast     #14                 // class java/util/Map$Entry
+     520: astore        6
+     522: aload         6
+     524: invokeinterface #157,  1          // InterfaceMethod java/util/Map$Entry.getValue:()Ljava/lang/Object;
+     529: checkcast     #77                 // class com/google/gson/JsonElement
+     532: invokevirtual #81                 // Method com/google/gson/JsonElement.getAsJsonObject:()Lcom/google/gson/JsonObject;
+     535: astore        7
+     537: new           #72                 // class yesman/epicfight/api/utils/math/OpenMatrix4f
+     540: dup
+     541: invokespecial #73                 // Method yesman/epicfight/api/utils/math/OpenMatrix4f."<init>":()V
+     544: astore        8
+     546: aload         7
+     548: ldc           #159                // String translation
+     550: invokevirtual #89                 // Method com/google/gson/JsonObject.has:(Ljava/lang/String;)Z
+     553: ifeq          601
+     556: aload         7
+     558: ldc           #159                // String translation
+     560: invokevirtual #93                 // Method com/google/gson/JsonObject.get:(Ljava/lang/String;)Lcom/google/gson/JsonElement;
+     563: invokevirtual #163                // Method com/google/gson/JsonElement.getAsJsonArray:()Lcom/google/gson/JsonArray;
+     566: astore        9
+     568: aload         8
+     570: aload         9
+     572: iconst_0
+     573: invokevirtual #168                // Method com/google/gson/JsonArray.get:(I)Lcom/google/gson/JsonElement;
+     576: invokevirtual #172                // Method com/google/gson/JsonElement.getAsFloat:()F
+     579: aload         9
+     581: iconst_1
+     582: invokevirtual #168                // Method com/google/gson/JsonArray.get:(I)Lcom/google/gson/JsonElement;
+     585: invokevirtual #172                // Method com/google/gson/JsonElement.getAsFloat:()F
+     588: aload         9
+     590: iconst_2
+     591: invokevirtual #168                // Method com/google/gson/JsonArray.get:(I)Lcom/google/gson/JsonElement;
+     594: invokevirtual #172                // Method com/google/gson/JsonElement.getAsFloat:()F
+     597: invokevirtual #176                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.translate:(FFF)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     600: pop
+     601: aload         7
+     603: ldc           #178                // String rotation
+     605: invokevirtual #89                 // Method com/google/gson/JsonObject.has:(Ljava/lang/String;)Z
+     608: ifeq          677
+     611: aload         7
+     613: ldc           #178                // String rotation
+     615: invokevirtual #93                 // Method com/google/gson/JsonObject.get:(Ljava/lang/String;)Lcom/google/gson/JsonElement;
+     618: invokevirtual #163                // Method com/google/gson/JsonElement.getAsJsonArray:()Lcom/google/gson/JsonArray;
+     621: astore        9
+     623: aload         8
+     625: aload         9
+     627: iconst_2
+     628: invokevirtual #168                // Method com/google/gson/JsonArray.get:(I)Lcom/google/gson/JsonElement;
+     631: invokevirtual #172                // Method com/google/gson/JsonElement.getAsFloat:()F
+     634: getstatic     #184                // Field yesman/epicfight/api/utils/math/Vec3f.Z_AXIS:Lyesman/epicfight/api/utils/math/Vec3f;
+     637: invokevirtual #188                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.rotateDeg:(FLyesman/epicfight/api/utils/math/Vec3f;)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     640: pop
+     641: aload         8
+     643: aload         9
+     645: iconst_1
+     646: invokevirtual #168                // Method com/google/gson/JsonArray.get:(I)Lcom/google/gson/JsonElement;
+     649: invokevirtual #172                // Method com/google/gson/JsonElement.getAsFloat:()F
+     652: getstatic     #191                // Field yesman/epicfight/api/utils/math/Vec3f.Y_AXIS:Lyesman/epicfight/api/utils/math/Vec3f;
+     655: invokevirtual #188                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.rotateDeg:(FLyesman/epicfight/api/utils/math/Vec3f;)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     658: pop
+     659: aload         8
+     661: aload         9
+     663: iconst_0
+     664: invokevirtual #168                // Method com/google/gson/JsonArray.get:(I)Lcom/google/gson/JsonElement;
+     667: invokevirtual #172                // Method com/google/gson/JsonElement.getAsFloat:()F
+     670: getstatic     #194                // Field yesman/epicfight/api/utils/math/Vec3f.X_AXIS:Lyesman/epicfight/api/utils/math/Vec3f;
+     673: invokevirtual #188                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.rotateDeg:(FLyesman/epicfight/api/utils/math/Vec3f;)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     676: pop
+     677: aload         7
+     679: ldc           #196                // String scale
+     681: invokevirtual #89                 // Method com/google/gson/JsonObject.has:(Ljava/lang/String;)Z
+     684: ifeq          732
+     687: aload         7
+     689: ldc           #196                // String scale
+     691: invokevirtual #93                 // Method com/google/gson/JsonObject.get:(Ljava/lang/String;)Lcom/google/gson/JsonElement;
+     694: invokevirtual #163                // Method com/google/gson/JsonElement.getAsJsonArray:()Lcom/google/gson/JsonArray;
+     697: astore        9
+     699: aload         8
+     701: aload         9
+     703: iconst_0
+     704: invokevirtual #168                // Method com/google/gson/JsonArray.get:(I)Lcom/google/gson/JsonElement;
+     707: invokevirtual #172                // Method com/google/gson/JsonElement.getAsFloat:()F
+     710: aload         9
+     712: iconst_1
+     713: invokevirtual #168                // Method com/google/gson/JsonArray.get:(I)Lcom/google/gson/JsonElement;
+     716: invokevirtual #172                // Method com/google/gson/JsonElement.getAsFloat:()F
+     719: aload         9
+     721: iconst_2
+     722: invokevirtual #168                // Method com/google/gson/JsonArray.get:(I)Lcom/google/gson/JsonElement;
+     725: invokevirtual #172                // Method com/google/gson/JsonElement.getAsFloat:()F
+     728: invokevirtual #198                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.scale:(FFF)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     731: pop
+     732: aload         4
+     734: aload         6
+     736: invokeinterface #201,  1          // InterfaceMethod java/util/Map$Entry.getKey:()Ljava/lang/Object;
+     741: checkcast     #203                // class java/lang/String
+     744: aload         8
+     746: invokevirtual #207                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.unmodifiable:()Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     749: invokevirtual #211                // Method com/google/common/collect/ImmutableMap$Builder.put:(Ljava/lang/Object;Ljava/lang/Object;)Lcom/google/common/collect/ImmutableMap$Builder;
+     752: pop
+     753: goto          500
+     756: aload_0
+     757: aload         4
+     759: invokevirtual #215                // Method com/google/common/collect/ImmutableMap$Builder.build:()Lcom/google/common/collect/ImmutableMap;
+     762: putfield      #128                // Field offhandCorrectionTransforms:Ljava/util/Map;
+     765: goto          775
+     768: aload_0
+     769: getstatic     #126                // Field GLOBAL_OFFHAND_ITEM_TRANSFORMS:Ljava/util/Map;
+     772: putfield      #128                // Field offhandCorrectionTransforms:Ljava/util/Map;
+     775: return
+
+  public void renderItemInHand(net.minecraft.world.item.ItemStack, yesman.epicfight.world.capabilities.entitypatch.LivingEntityPatch<?>, net.minecraft.world.InteractionHand, yesman.epicfight.api.utils.math.OpenMatrix4f[], net.minecraft.client.renderer.MultiBufferSource, com.mojang.blaze3d.vertex.PoseStack, int, float);
+    descriptor: (Lnet/minecraft/world/item/ItemStack;Lyesman/epicfight/world/capabilities/entitypatch/LivingEntityPatch;Lnet/minecraft/world/InteractionHand;[Lyesman/epicfight/api/utils/math/OpenMatrix4f;Lnet/minecraft/client/renderer/MultiBufferSource;Lcom/mojang/blaze3d/vertex/PoseStack;IF)V
+    Code:
+       0: aload_0
+       1: aload_2
+       2: aload_3
+       3: aload         4
+       5: invokevirtual #242                // Method getCorrectionMatrix:(Lyesman/epicfight/world/capabilities/entitypatch/LivingEntityPatch;Lnet/minecraft/world/InteractionHand;[Lyesman/epicfight/api/utils/math/OpenMatrix4f;)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+       8: astore        9
+      10: aload         6
+      12: invokevirtual #247                // Method com/mojang/blaze3d/vertex/PoseStack.m_85836_:()V
+      15: aload         6
+      17: aload         9
+      19: invokestatic  #253                // Method yesman/epicfight/api/utils/math/MathUtils.mulStack:(Lcom/mojang/blaze3d/vertex/PoseStack;Lyesman/epicfight/api/utils/math/OpenMatrix4f;)V
+      22: aload_3
+      23: getstatic     #259                // Field net/minecraft/world/InteractionHand.MAIN_HAND:Lnet/minecraft/world/InteractionHand;
+      26: if_acmpne     35
+      29: getstatic     #265                // Field net/minecraft/world/item/ItemDisplayContext.THIRD_PERSON_RIGHT_HAND:Lnet/minecraft/world/item/ItemDisplayContext;
+      32: goto          38
+      35: getstatic     #268                // Field net/minecraft/world/item/ItemDisplayContext.THIRD_PERSON_LEFT_HAND:Lnet/minecraft/world/item/ItemDisplayContext;
+      38: astore        10
+      40: getstatic     #41                 // Field itemInHandRenderer:Lnet/minecraft/client/renderer/ItemInHandRenderer;
+      43: aload_2
+      44: invokevirtual #274                // Method yesman/epicfight/world/capabilities/entitypatch/LivingEntityPatch.getOriginal:()Lnet/minecraft/world/entity/Entity;
+      47: checkcast     #276                // class net/minecraft/world/entity/LivingEntity
+      50: aload_1
+      51: aload         10
+      53: aload_3
+      54: getstatic     #279                // Field net/minecraft/world/InteractionHand.OFF_HAND:Lnet/minecraft/world/InteractionHand;
+      57: if_acmpne     64
+      60: iconst_1
+      61: goto          65
+      64: iconst_0
+      65: aload         6
+      67: aload         5
+      69: iload         7
+      71: invokevirtual #291                // Method net/minecraft/client/renderer/ItemInHandRenderer.m_269530_:(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemDisplayContext;ZLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V
+      74: aload         6
+      76: invokevirtual #294                // Method com/mojang/blaze3d/vertex/PoseStack.m_85849_:()V
+      79: return
+
+  public yesman.epicfight.api.utils.math.OpenMatrix4f getCorrectionMatrix(yesman.epicfight.world.capabilities.entitypatch.LivingEntityPatch<?>, net.minecraft.world.InteractionHand, yesman.epicfight.api.utils.math.OpenMatrix4f[]);
+    descriptor: (Lyesman/epicfight/world/capabilities/entitypatch/LivingEntityPatch;Lnet/minecraft/world/InteractionHand;[Lyesman/epicfight/api/utils/math/OpenMatrix4f;)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+    Code:
+       0: aconst_null
+       1: astore        4
+       3: aload_0
+       4: getfield      #114                // Field alwaysInHand:Z
+       7: ifeq          74
+      10: aload_1
+      11: invokevirtual #316                // Method yesman/epicfight/world/capabilities/entitypatch/LivingEntityPatch.getArmature:()Lyesman/epicfight/api/model/Armature;
+      14: astore        6
+      16: aload         6
+      18: instanceof    #318                // class yesman/epicfight/model/armature/types/ToolHolderArmature
+      21: ifeq          57
+      24: aload         6
+      26: checkcast     #318                // class yesman/epicfight/model/armature/types/ToolHolderArmature
+      29: astore        5
+      31: aload_2
+      32: getstatic     #259                // Field net/minecraft/world/InteractionHand.MAIN_HAND:Lnet/minecraft/world/InteractionHand;
+      35: if_acmpne     48
+      38: aload         5
+      40: invokeinterface #322,  1          // InterfaceMethod yesman/epicfight/model/armature/types/ToolHolderArmature.rightToolJoint:()Lyesman/epicfight/api/animation/Joint;
+      45: goto          55
+      48: aload         5
+      50: invokeinterface #327,  1          // InterfaceMethod yesman/epicfight/model/armature/types/ToolHolderArmature.leftToolJoint:()Lyesman/epicfight/api/animation/Joint;
+      55: astore        4
+      57: aload         4
+      59: ifnonnull     81
+      62: aload_1
+      63: invokevirtual #316                // Method yesman/epicfight/world/capabilities/entitypatch/LivingEntityPatch.getArmature:()Lyesman/epicfight/api/model/Armature;
+      66: getfield      #333                // Field yesman/epicfight/api/model/Armature.rootJoint:Lyesman/epicfight/api/animation/Joint;
+      69: astore        4
+      71: goto          81
+      74: aload_1
+      75: aload_2
+      76: invokevirtual #337                // Method yesman/epicfight/world/capabilities/entitypatch/LivingEntityPatch.getParentJointOfHand:(Lnet/minecraft/world/InteractionHand;)Lyesman/epicfight/api/animation/Joint;
+      79: astore        4
+      81: getstatic     #341                // Field yesman/epicfight/client/renderer/patched/item/RenderItemBase$1.$SwitchMap$net$minecraft$world$InteractionHand:[I
+      84: aload_2
+      85: invokevirtual #345                // Method net/minecraft/world/InteractionHand.ordinal:()I
+      88: iaload
+      89: lookupswitch  { // 2
+                     1: 116
+                     2: 160
+               default: 201
+          }
+     116: aload_0
+     117: getfield      #75                 // Field transformHolder:Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     120: aload_0
+     121: getfield      #124                // Field mainhandCorrectionTransforms:Ljava/util/Map;
+     124: aload         4
+     126: invokevirtual #349                // Method yesman/epicfight/api/animation/Joint.getName:()Ljava/lang/String;
+     129: getstatic     #122                // Field GLOBAL_MAINHAND_ITEM_TRANSFORMS:Ljava/util/Map;
+     132: aload         4
+     134: invokevirtual #349                // Method yesman/epicfight/api/animation/Joint.getName:()Ljava/lang/String;
+     137: invokeinterface #352,  2          // InterfaceMethod java/util/Map.get:(Ljava/lang/Object;)Ljava/lang/Object;
+     142: checkcast     #72                 // class yesman/epicfight/api/utils/math/OpenMatrix4f
+     145: invokeinterface #356,  3          // InterfaceMethod java/util/Map.getOrDefault:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+     150: checkcast     #72                 // class yesman/epicfight/api/utils/math/OpenMatrix4f
+     153: invokevirtual #360                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.load:(Lyesman/epicfight/api/utils/math/OpenMatrix4f;)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     156: pop
+     157: goto          201
+     160: aload_0
+     161: getfield      #75                 // Field transformHolder:Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     164: aload_0
+     165: getfield      #128                // Field offhandCorrectionTransforms:Ljava/util/Map;
+     168: aload         4
+     170: invokevirtual #349                // Method yesman/epicfight/api/animation/Joint.getName:()Ljava/lang/String;
+     173: getstatic     #126                // Field GLOBAL_OFFHAND_ITEM_TRANSFORMS:Ljava/util/Map;
+     176: aload         4
+     178: invokevirtual #349                // Method yesman/epicfight/api/animation/Joint.getName:()Ljava/lang/String;
+     181: invokeinterface #352,  2          // InterfaceMethod java/util/Map.get:(Ljava/lang/Object;)Ljava/lang/Object;
+     186: checkcast     #72                 // class yesman/epicfight/api/utils/math/OpenMatrix4f
+     189: invokeinterface #356,  3          // InterfaceMethod java/util/Map.getOrDefault:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+     194: checkcast     #72                 // class yesman/epicfight/api/utils/math/OpenMatrix4f
+     197: invokevirtual #360                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.load:(Lyesman/epicfight/api/utils/math/OpenMatrix4f;)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     200: pop
+     201: aload_0
+     202: getfield      #75                 // Field transformHolder:Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     205: aload_3
+     206: aload         4
+     208: invokevirtual #363                // Method yesman/epicfight/api/animation/Joint.getId:()I
+     211: aaload
+     212: invokevirtual #366                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.mulFront:(Lyesman/epicfight/api/utils/math/OpenMatrix4f;)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     215: pop
+     216: aload_0
+     217: getfield      #75                 // Field transformHolder:Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     220: areturn
+
+  public yesman.epicfight.api.client.animation.property.TrailInfo trailInfo();
+    descriptor: ()Lyesman/epicfight/api/client/animation/property/TrailInfo;
+    Code:
+       0: aload_0
+       1: getfield      #101                // Field trailInfo:Lyesman/epicfight/api/client/animation/property/TrailInfo;
+       4: areturn
+
+  public boolean forceVanillaFirstPerson();
+    descriptor: ()Z
+    Code:
+       0: aload_0
+       1: getfield      #111                // Field forceVanillaFirstPerson:Z
+       4: ireturn
+
+  public boolean appearedInAfterimage();
+    descriptor: ()Z
+    Code:
+       0: aload_0
+       1: getfield      #118                // Field appearedInAfterimage:Z
+       4: ireturn
+
+  static {};
+    descriptor: ()V
+    Code:
+       0: invokestatic  #134                // Method com/google/common/collect/ImmutableMap.builder:()Lcom/google/common/collect/ImmutableMap$Builder;
+       3: ldc_w         #373                // String Tool_L
+       6: new           #72                 // class yesman/epicfight/api/utils/math/OpenMatrix4f
+       9: dup
+      10: invokespecial #73                 // Method yesman/epicfight/api/utils/math/OpenMatrix4f."<init>":()V
+      13: fconst_0
+      14: fconst_0
+      15: ldc_w         #374                // float -0.13f
+      18: invokevirtual #176                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.translate:(FFF)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+      21: ldc_w         #375                // float -90.0f
+      24: getstatic     #194                // Field yesman/epicfight/api/utils/math/Vec3f.X_AXIS:Lyesman/epicfight/api/utils/math/Vec3f;
+      27: invokevirtual #188                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.rotateDeg:(FLyesman/epicfight/api/utils/math/Vec3f;)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+      30: invokevirtual #207                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.unmodifiable:()Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+      33: invokevirtual #211                // Method com/google/common/collect/ImmutableMap$Builder.put:(Ljava/lang/Object;Ljava/lang/Object;)Lcom/google/common/collect/ImmutableMap$Builder;
+      36: ldc_w         #377                // String Tool_R
+      39: new           #72                 // class yesman/epicfight/api/utils/math/OpenMatrix4f
+      42: dup
+      43: invokespecial #73                 // Method yesman/epicfight/api/utils/math/OpenMatrix4f."<init>":()V
+      46: fconst_0
+      47: fconst_0
+      48: ldc_w         #374                // float -0.13f
+      51: invokevirtual #176                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.translate:(FFF)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+      54: ldc_w         #375                // float -90.0f
+      57: getstatic     #194                // Field yesman/epicfight/api/utils/math/Vec3f.X_AXIS:Lyesman/epicfight/api/utils/math/Vec3f;
+      60: invokevirtual #188                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.rotateDeg:(FLyesman/epicfight/api/utils/math/Vec3f;)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+      63: invokevirtual #207                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.unmodifiable:()Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+      66: invokevirtual #211                // Method com/google/common/collect/ImmutableMap$Builder.put:(Ljava/lang/Object;Ljava/lang/Object;)Lcom/google/common/collect/ImmutableMap$Builder;
+      69: ldc_w         #379                // String Chest
+      72: new           #72                 // class yesman/epicfight/api/utils/math/OpenMatrix4f
+      75: dup
+      76: ldc_w         #380                // float 3.3484866E-8f
+      79: ldc_w         #381                // float -2.809714E-8f
+      82: ldc_w         #382                // float -0.99999994f
+      85: fconst_0
+      86: ldc_w         #383                // float -0.6427876f
+      89: ldc_w         #384                // float -0.7660444f
+      92: fconst_0
+      93: fconst_0
+      94: ldc_w         #385                // float -0.76604444f
+      97: ldc_w         #386                // float 0.64278764f
+     100: ldc_w         #387                // float -4.3711385E-8f
+     103: fconst_0
+     104: ldc_w         #388                // float 0.25711504f
+     107: ldc_w         #389                // float 0.30641776f
+     110: ldc_w         #390                // float 0.14999999f
+     113: fconst_1
+     114: invokespecial #393                // Method yesman/epicfight/api/utils/math/OpenMatrix4f."<init>":(FFFFFFFFFFFFFFFF)V
+     117: invokevirtual #207                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.unmodifiable:()Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     120: invokevirtual #211                // Method com/google/common/collect/ImmutableMap$Builder.put:(Ljava/lang/Object;Ljava/lang/Object;)Lcom/google/common/collect/ImmutableMap$Builder;
+     123: ldc_w         #395                // String Root
+     126: new           #72                 // class yesman/epicfight/api/utils/math/OpenMatrix4f
+     129: dup
+     130: invokespecial #73                 // Method yesman/epicfight/api/utils/math/OpenMatrix4f."<init>":()V
+     133: invokevirtual #207                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.unmodifiable:()Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     136: invokevirtual #211                // Method com/google/common/collect/ImmutableMap$Builder.put:(Ljava/lang/Object;Ljava/lang/Object;)Lcom/google/common/collect/ImmutableMap$Builder;
+     139: invokevirtual #215                // Method com/google/common/collect/ImmutableMap$Builder.build:()Lcom/google/common/collect/ImmutableMap;
+     142: putstatic     #122                // Field GLOBAL_MAINHAND_ITEM_TRANSFORMS:Ljava/util/Map;
+     145: invokestatic  #134                // Method com/google/common/collect/ImmutableMap.builder:()Lcom/google/common/collect/ImmutableMap$Builder;
+     148: ldc_w         #373                // String Tool_L
+     151: new           #72                 // class yesman/epicfight/api/utils/math/OpenMatrix4f
+     154: dup
+     155: invokespecial #73                 // Method yesman/epicfight/api/utils/math/OpenMatrix4f."<init>":()V
+     158: fconst_0
+     159: fconst_0
+     160: ldc_w         #374                // float -0.13f
+     163: invokevirtual #176                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.translate:(FFF)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     166: ldc_w         #375                // float -90.0f
+     169: getstatic     #194                // Field yesman/epicfight/api/utils/math/Vec3f.X_AXIS:Lyesman/epicfight/api/utils/math/Vec3f;
+     172: invokevirtual #188                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.rotateDeg:(FLyesman/epicfight/api/utils/math/Vec3f;)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     175: invokevirtual #207                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.unmodifiable:()Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     178: invokevirtual #211                // Method com/google/common/collect/ImmutableMap$Builder.put:(Ljava/lang/Object;Ljava/lang/Object;)Lcom/google/common/collect/ImmutableMap$Builder;
+     181: ldc_w         #377                // String Tool_R
+     184: new           #72                 // class yesman/epicfight/api/utils/math/OpenMatrix4f
+     187: dup
+     188: invokespecial #73                 // Method yesman/epicfight/api/utils/math/OpenMatrix4f."<init>":()V
+     191: fconst_0
+     192: fconst_0
+     193: ldc_w         #374                // float -0.13f
+     196: invokevirtual #176                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.translate:(FFF)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     199: ldc_w         #375                // float -90.0f
+     202: getstatic     #194                // Field yesman/epicfight/api/utils/math/Vec3f.X_AXIS:Lyesman/epicfight/api/utils/math/Vec3f;
+     205: invokevirtual #188                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.rotateDeg:(FLyesman/epicfight/api/utils/math/Vec3f;)Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     208: invokevirtual #207                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.unmodifiable:()Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     211: invokevirtual #211                // Method com/google/common/collect/ImmutableMap$Builder.put:(Ljava/lang/Object;Ljava/lang/Object;)Lcom/google/common/collect/ImmutableMap$Builder;
+     214: ldc_w         #379                // String Chest
+     217: new           #72                 // class yesman/epicfight/api/utils/math/OpenMatrix4f
+     220: dup
+     221: ldc_w         #380                // float 3.3484866E-8f
+     224: ldc_w         #396                // float 2.809714E-8f
+     227: ldc_w         #397                // float 0.99999994f
+     230: fconst_0
+     231: ldc_w         #398                // float 0.6427876f
+     234: ldc_w         #384                // float -0.7660444f
+     237: fconst_0
+     238: fconst_0
+     239: ldc_w         #399                // float 0.76604444f
+     242: ldc_w         #386                // float 0.64278764f
+     245: ldc_w         #387                // float -4.3711385E-8f
+     248: fconst_0
+     249: ldc_w         #400                // float -0.25711504f
+     252: ldc_w         #389                // float 0.30641776f
+     255: ldc_w         #401                // float 0.15099998f
+     258: fconst_1
+     259: invokespecial #393                // Method yesman/epicfight/api/utils/math/OpenMatrix4f."<init>":(FFFFFFFFFFFFFFFF)V
+     262: invokevirtual #207                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.unmodifiable:()Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     265: invokevirtual #211                // Method com/google/common/collect/ImmutableMap$Builder.put:(Ljava/lang/Object;Ljava/lang/Object;)Lcom/google/common/collect/ImmutableMap$Builder;
+     268: ldc_w         #395                // String Root
+     271: new           #72                 // class yesman/epicfight/api/utils/math/OpenMatrix4f
+     274: dup
+     275: invokespecial #73                 // Method yesman/epicfight/api/utils/math/OpenMatrix4f."<init>":()V
+     278: invokevirtual #207                // Method yesman/epicfight/api/utils/math/OpenMatrix4f.unmodifiable:()Lyesman/epicfight/api/utils/math/OpenMatrix4f;
+     281: invokevirtual #211                // Method com/google/common/collect/ImmutableMap$Builder.put:(Ljava/lang/Object;Ljava/lang/Object;)Lcom/google/common/collect/ImmutableMap$Builder;
+     284: invokevirtual #215                // Method com/google/common/collect/ImmutableMap$Builder.build:()Lcom/google/common/collect/ImmutableMap;
+     287: putstatic     #126                // Field GLOBAL_OFFHAND_ITEM_TRANSFORMS:Ljava/util/Map;
+     290: return
+}
+
+=== PatchedRenderersEvent.Add ===
+Compiled from "PatchedRenderersEvent.java"
+public class yesman.epicfight.api.client.forgeevent.PatchedRenderersEvent$Add extends yesman.epicfight.api.client.forgeevent.PatchedRenderersEvent {
+  private final java.util.Map<net.minecraft.world.entity.EntityType<?>, java.util.function.Function<net.minecraft.world.entity.EntityType<?>, yesman.epicfight.client.renderer.patched.entity.PatchedEntityRenderer>> entityRendererProvider;
+    descriptor: Ljava/util/Map;
+
+  private final net.minecraft.client.renderer.entity.EntityRendererProvider$Context context;
+    descriptor: Lnet/minecraft/client/renderer/entity/EntityRendererProvider$Context;
+
+  public yesman.epicfight.api.client.forgeevent.PatchedRenderersEvent$Add(java.util.Map<net.minecraft.world.entity.EntityType<?>, java.util.function.Function<net.minecraft.world.entity.EntityType<?>, yesman.epicfight.client.renderer.patched.entity.PatchedEntityRenderer>>, net.minecraft.client.renderer.entity.EntityRendererProvider$Context);
+    descriptor: (Ljava/util/Map;Lnet/minecraft/client/renderer/entity/EntityRendererProvider$Context;)V
+    Code:
+       0: aload_0
+       1: invokespecial #22                 // Method yesman/epicfight/api/client/forgeevent/PatchedRenderersEvent."<init>":()V
+       4: aload_0
+       5: aload_1
+       6: putfield      #24                 // Field entityRendererProvider:Ljava/util/Map;
+       9: aload_0
+      10: aload_2
+      11: putfield      #26                 // Field context:Lnet/minecraft/client/renderer/entity/EntityRendererProvider$Context;
+      14: return
+
+  public void addPatchedEntityRenderer(net.minecraft.world.entity.EntityType<?>, java.util.function.Function<net.minecraft.world.entity.EntityType<?>, yesman.epicfight.client.renderer.patched.entity.PatchedEntityRenderer>);
+    descriptor: (Lnet/minecraft/world/entity/EntityType;Ljava/util/function/Function;)V
+    Code:
+       0: aload_0
+       1: getfield      #24                 // Field entityRendererProvider:Ljava/util/Map;
+       4: aload_1
+       5: aload_2
+       6: invokeinterface #37,  3           // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+      11: pop
+      12: return
+
+  public net.minecraft.client.renderer.entity.EntityRendererProvider$Context getContext();
+    descriptor: ()Lnet/minecraft/client/renderer/entity/EntityRendererProvider$Context;
+    Code:
+       0: aload_0
+       1: getfield      #26                 // Field context:Lnet/minecraft/client/renderer/entity/EntityRendererProvider$Context;
+       4: areturn
+}
