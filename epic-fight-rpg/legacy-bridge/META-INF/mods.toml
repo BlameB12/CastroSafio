@@ -4,11 +4,11 @@ license="All Rights Reserved"
 
 [[mods]]
 modId="castrosafio_epicfight_legacy_bridge"
-version="1.0.0"
+version="1.0.1"
 displayName="CastroSafio Epic Fight Legacy Renderer Bridge"
 authors="CastroSafio"
 description='''
-Compatibility bridge for legacy Epic Fight 1.20.1 addons compiled against the old RenderItemBase API.
+Compatibility bridge for legacy Epic Fight 1.20.1 addons compiled against the old RenderItemBase and PatchedRenderersEvent item-renderer APIs.
 Targets Epic Fight 20.14.x while preserving the original addon content and custom renderers.
 '''
 
