@@ -25,7 +25,9 @@ jobs:
           python-version: '3.12'
 
       - name: Generate CurseForge pack
-        run: python epic-fight-rpg/build_pack.py
+        run: |
+          python epic-fight-rpg/build_pack.py
+          python epic-fight-rpg/fix_dependencies.py
 
       - name: Validate manifest
         run: |
@@ -34,11 +36,17 @@ jobs:
           p=json.load(open('build/pack/manifest.json', encoding='utf-8'))
           assert p['minecraft']['version']=='1.20.1'
           assert p['minecraft']['modLoaders'][0]['id']=='forge-47.4.28'
-          assert len(p['files'])==188
+          assert len(p['files'])==191
           keys={(x['projectID'],x['fileID']) for x in p['files']}
-          assert len(keys)==188
+          assert len(keys)==191
           assert all(x['required'] for x in p['files'])
-          print('manifest OK:', len(p['files']), 'unique entries')
+          projects={x['projectID']:x['fileID'] for x in p['files']}
+          assert 665625 not in projects  # Epic ACG incompatible with Epic Fight 20.14.17
+          assert projects[1286233]==8021301  # dacxirons 1.5.4
+          assert projects[445274]==5435202   # Relics 0.6.5.2
+          assert projects[474114]==8465155   # Huge Structure Blocks Forge 1.1.10
+          assert projects[326652]==8889041   # Cupboard 4.2
+          print('manifest FIX2 OK:', len(p['files']), 'unique entries')
           PY
 
       - name: Create importable CurseForge zip
@@ -58,5 +66,5 @@ jobs:
             echo "Pack unchanged"
             exit 0
           fi
-          git commit -m "Build RPG Epic Fight FULL COMPAT + MAX OPT"
+          git commit -m "Build RPG Epic Fight FULL COMPAT + MAX OPT FIX2"
           git push
