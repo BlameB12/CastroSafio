@@ -36,17 +36,18 @@ jobs:
           p=json.load(open('build/pack/manifest.json', encoding='utf-8'))
           assert p['minecraft']['version']=='1.20.1'
           assert p['minecraft']['modLoaders'][0]['id']=='forge-47.4.28'
-          assert len(p['files'])==191
+          assert len(p['files'])==193
           keys={(x['projectID'],x['fileID']) for x in p['files']}
-          assert len(keys)==191
+          assert len(keys)==193
           assert all(x['required'] for x in p['files'])
           projects={x['projectID']:x['fileID'] for x in p['files']}
-          assert 665625 not in projects  # Epic ACG incompatible with Epic Fight 20.14.17
-          assert projects[1286233]==8021301  # dacxirons 1.5.4
-          assert projects[445274]==5435202   # Relics 0.6.5.2
-          assert projects[474114]==8465155   # Huge Structure Blocks Forge 1.1.10
-          assert projects[326652]==8889041   # Cupboard 4.2
-          print('manifest FIX2 OK:', len(p['files']), 'unique entries')
+          assert projects[665625]==8430532     # Epic ACG original
+          assert projects[1737786]==9206668   # Epic ACG 20.14.17 compatibility bridge
+          assert projects[1286233]==8021301   # dacxirons 1.5.4
+          assert projects[445274]==5435202    # Relics 0.6.5.2
+          assert projects[474114]==8465155    # Huge Structure Blocks Forge 1.1.10
+          assert projects[326652]==8889041    # Cupboard 4.2
+          print('manifest FIX3 ACG OK:', len(p['files']), 'unique entries')
           PY
 
       - name: Create importable CurseForge zip
@@ -66,5 +67,5 @@ jobs:
             echo "Pack unchanged"
             exit 0
           fi
-          git commit -m "Build RPG Epic Fight FULL COMPAT + MAX OPT FIX2"
+          git commit -m "Build RPG Epic Fight FULL COMPAT + MAX OPT FIX3 ACG"
           git push
