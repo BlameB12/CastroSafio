@@ -1,0 +1,35 @@
+name: Build Abyssor Real Boss
+
+on:
+  push:
+    branches:
+      - abyssor-realboss-build
+    paths:
+      - 'abyssor-realboss/**'
+      - '.github/workflows/abyssor-realboss-build.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Build NeoForge mod
+        working-directory: abyssor-realboss
+        run: gradle --no-daemon build --stacktrace
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: Abyssor-RealBoss-NeoForge-1.21.1
+          path: abyssor-realboss/build/libs/*.jar
+          if-no-files-found: error
