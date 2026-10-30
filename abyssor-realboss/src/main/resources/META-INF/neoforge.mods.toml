@@ -1,0 +1,28 @@
+modLoader="javafml"
+loaderVersion="[1,)"
+license="All Rights Reserved"
+
+[[mods]]
+modId="abyssor"
+version="0.3.0-realboss"
+displayName="Abyssor - Sovereign of the Abyss"
+authors="CastroSafio"
+credits="Concepto, dirección y diseño: CastroSafio"
+description='''
+Abyssor: jefe marino real de tres fases para NeoForge 1.21.1.
+Entidad propia, modelo animado, hitboxes corporales múltiples y cinemáticas dirigidas.
+'''
+
+[[dependencies.abyssor]]
+modId="neoforge"
+type="required"
+versionRange="[21.1,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.abyssor]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1]"
+ordering="NONE"
+side="BOTH"
