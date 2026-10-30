@@ -38,9 +38,8 @@ public class AbyssorEntity extends Monster {
     }
 
     @Override protected void registerGoals() {}
-    @Override public boolean canBreatheUnderwater() { return true; }
     @Override public boolean isPushedByFluid() { return false; }
-    @Override protected boolean removeWhenFarAway(double distance) { return false; }
+    @Override public boolean removeWhenFarAway(double distance) { return false; }
     @Override public AABB getBoundingBoxForCulling() { return this.getBoundingBox().inflate(30.0D, 12.0D, 30.0D); }
 
     public int getPhase() {
@@ -85,6 +84,7 @@ public class AbyssorEntity extends Monster {
     @Override public void tick() {
         super.tick();
         this.setNoGravity(true);
+        this.setAirSupply(this.getMaxAirSupply());
         this.fallDistance = 0.0F;
         if (meleeCooldown > 0) meleeCooldown--;
         if (!this.level().isClientSide() && this.level() instanceof ServerLevel serverLevel) {
