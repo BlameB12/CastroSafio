@@ -14,16 +14,16 @@ public class AbyssorRenderer extends MobRenderer<AbyssorEntity, AbyssorModel> {
     private static final ResourceLocation P3 = ResourceLocation.fromNamespaceAndPath(AbyssorMod.MODID, "textures/entity/abyssor_phase3.png");
 
     public AbyssorRenderer(EntityRendererProvider.Context context) {
-        super(context, new AbyssorModel(context.bakeLayer(AbyssorModel.LAYER)), 3.0F);
+        super(context, new AbyssorModel(context.bakeLayer(AbyssorModel.LAYER)), 4.5F);
     }
 
     @Override protected void scale(AbyssorEntity entity, PoseStack poseStack, float partialTick) {
-        float s = entity.getPhase() == 3 ? 1.42F : entity.getPhase() == 2 ? 1.34F : 1.28F;
+        float s = entity.getPhase() == 3 ? 1.58F : entity.getPhase() == 2 ? 1.48F : 1.40F;
         poseStack.scale(s, s, s);
     }
 
     @Override protected int getBlockLightLevel(AbyssorEntity entity, BlockPos pos) {
-        return Math.max(10, super.getBlockLightLevel(entity, pos));
+        return Math.max(12, super.getBlockLightLevel(entity, pos));
     }
 
     @Override public ResourceLocation getTextureLocation(AbyssorEntity entity) {
