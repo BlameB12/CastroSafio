@@ -41,7 +41,7 @@ public class OfidiaEntity extends Monster {
 
     @Override protected void registerGoals() {}
     @Override public boolean isPushedByFluid() { return false; }
-    @Override protected boolean removeWhenFarAway(double distance) { return false; }
+    @Override public boolean removeWhenFarAway(double distance) { return false; }
     @Override public AABB getBoundingBoxForCulling() { return this.getBoundingBox().inflate(18.0D, 14.0D, 18.0D); }
 
     public int getPhase() {
