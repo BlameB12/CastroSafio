@@ -16,7 +16,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 public class AbyssorEntity extends Monster {
-    private static final int PART_COUNT = 7;
+    private static final int PART_COUNT = 10;
     private final int[] partIds = new int[PART_COUNT];
     private int meleeCooldown;
 
@@ -40,7 +40,7 @@ public class AbyssorEntity extends Monster {
     @Override protected void registerGoals() {}
     @Override public boolean isPushedByFluid() { return false; }
     @Override public boolean removeWhenFarAway(double distance) { return false; }
-    @Override public AABB getBoundingBoxForCulling() { return this.getBoundingBox().inflate(30.0D, 12.0D, 30.0D); }
+    @Override public AABB getBoundingBoxForCulling() { return this.getBoundingBox().inflate(45.0D, 20.0D, 45.0D); }
 
     public int getPhase() {
         float pct = this.getHealth() / Math.max(1.0F, this.getMaxHealth());
@@ -51,9 +51,10 @@ public class AbyssorEntity extends Monster {
         int i = Mth.clamp(index, 0, PART_COUNT - 1);
         Vec3 forward = Vec3.directionFromRotation(0.0F, this.getYRot()).normalize();
         Vec3 right = new Vec3(-forward.z, 0.0D, forward.x);
-        double distance = 4.2D + i * 4.0D;
-        double sway = Math.sin(this.tickCount * 0.13D - i * 0.72D) * (0.35D + i * 0.25D);
-        double vertical = Math.sin(this.tickCount * 0.10D - i * 0.48D) * 0.42D - i * 0.08D;
+        double distance = 4.8D + i * 3.15D;
+        double progress = i / (double)(PART_COUNT - 1);
+        double sway = Math.sin(this.tickCount * 0.13D - i * 0.62D) * (0.40D + progress * 2.20D);
+        double vertical = Math.sin(this.tickCount * 0.10D - i * 0.46D) * (0.35D + progress * 0.55D) - progress * 0.65D;
         return this.position().subtract(forward.scale(distance)).add(right.scale(sway)).add(0.0D, vertical, 0.0D);
     }
 
@@ -105,7 +106,7 @@ public class AbyssorEntity extends Monster {
                         this.yBodyRot = this.getYRot();
                         this.yHeadRot = this.getYRot();
                     }
-                    if (dist < 7.5D && meleeCooldown <= 0) {
+                    if (dist < 9.0D && meleeCooldown <= 0) {
                         float damage = getPhase() == 3 ? 18.0F : getPhase() == 2 ? 15.0F : 12.0F;
                         target.hurt(this.damageSources().mobAttack(this), damage);
                         Vec3 push = target.position().subtract(this.position()).normalize().scale(getPhase() == 3 ? 1.6D : 1.0D);
