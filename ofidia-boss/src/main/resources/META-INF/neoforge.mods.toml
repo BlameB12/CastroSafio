@@ -1,0 +1,28 @@
+modLoader="javafml"
+loaderVersion="[1,)"
+license="All Rights Reserved"
+
+[[mods]]
+modId="ofidia"
+version="0.1.0-beta"
+displayName="Ofidia - Voice of the Limbo"
+authors="CastroSafio"
+credits="Concepto y dirección: CastroSafio. Inspirado visualmente en Ofidia de DEDsafio 4."
+description='''
+Ofidia: jefe del Limbo para NeoForge 1.21.1.
+Entidad propia, modelo real animado, hitboxes múltiples, tres fases y cinemática dirigida.
+'''
+
+[[dependencies.ofidia]]
+modId="neoforge"
+type="required"
+versionRange="[21.1,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.ofidia]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1]"
+ordering="NONE"
+side="BOTH"
