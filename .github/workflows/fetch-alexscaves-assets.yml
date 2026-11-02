@@ -1,0 +1,33 @@
+name: Fetch Alexs Caves Assets
+
+on:
+  push:
+    branches:
+      - cataclysm-assets-fetch
+  workflow_dispatch:
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Clone Alexs Caves source
+        run: git clone --depth 1 https://github.com/AlexModGuy/AlexsCaves.git alex-src
+      - name: Collect models and textures
+        shell: bash
+        run: |
+          set -e
+          mkdir -p export-alex/models export-alex/textures
+          for m in TremorsaurusModel SubterranodonModel HullbreakerModel MagnetronModel GloomothModel; do
+            cp "alex-src/src/main/java/com/github/alexmodguy/alexscaves/client/model/${m}.java" export-alex/models/
+          done
+          for t in tremorsaurus subterranodon hullbreaker magnetron gloomoth; do
+            cp "alex-src/src/main/resources/assets/alexscaves/textures/entity/${t}.png" export-alex/textures/
+          done
+          find export-alex -type f | sort
+      - name: Upload assets bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: alexscaves-mob-models-and-textures
+          path: export-alex/**
+          if-no-files-found: error
