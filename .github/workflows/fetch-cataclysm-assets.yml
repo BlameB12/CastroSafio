@@ -1,0 +1,37 @@
+name: Fetch Cataclysm Assets
+
+on:
+  push:
+    branches:
+      - cataclysm-assets-fetch
+  workflow_dispatch:
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Clone Cataclysm source
+        run: git clone --depth 1 https://github.com/lender544/new1.20.1.git cataclysm-src
+      - name: Collect models and textures
+        shell: bash
+        run: |
+          set -e
+          mkdir -p export/models export/textures
+          cp cataclysm-src/src/main/java/com/github/L_Ender/cataclysm/client/model/entity/Ancient_Remnant_Rework_Model.java export/models/
+          cp cataclysm-src/src/main/java/com/github/L_Ender/cataclysm/client/model/entity/The_Leviathan_Model.java export/models/
+          cp cataclysm-src/src/main/java/com/github/L_Ender/cataclysm/client/model/entity/Ignis_Model.java export/models/
+          cp cataclysm-src/src/main/java/com/github/L_Ender/cataclysm/client/model/entity/Maledictus_Model.java export/models/
+          cp cataclysm-src/src/main/java/com/github/L_Ender/cataclysm/client/model/entity/Scylla_Model.java export/models/
+          for d in ancient_remnant leviathan ignis maledictus scylla; do
+            if [ -d "cataclysm-src/src/main/resources/assets/cataclysm/textures/entity/$d" ]; then
+              cp -r "cataclysm-src/src/main/resources/assets/cataclysm/textures/entity/$d" "export/textures/$d"
+            fi
+          done
+          find export -maxdepth 3 -type f | sort
+      - name: Upload assets bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: cataclysm-boss-models-and-textures
+          path: export/**
+          if-no-files-found: error
